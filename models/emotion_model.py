@@ -59,12 +59,27 @@ def calculate_annotation_completeness(label_dict):
     has_va = v_value != 0 or a_value != 0
     has_patient_status = patient_status is not None
     has_emotion_type = emotion_type is not None
-    has_discrete_emotion = emotion_type == 'neutral' or (emotion_type == 'non-neutral' and discrete_emotion is not None)
     
+    # 检查离散情感是否完整标注
+    has_discrete_emotion = False
+    if emotion_type == 'neutral':
+        # 对于中性情感，不需要额外的离散情感标注
+        has_discrete_emotion = True
+    elif emotion_type == 'non-neutral' and discrete_emotion is not None:
+        # 对于非中性情感，需要有具体的离散情感标注
+        has_discrete_emotion = True
+    
+    # 如果什么都没有标注
     if not has_va and not has_patient_status and not has_emotion_type:
         return 'none'
     
+    # 如果所有必要的标注都完成了
     if has_va and has_patient_status and has_emotion_type and has_discrete_emotion:
         return 'complete'
     
-    return 'va-only'
+    # 如果只标注了VA值或部分标注
+    if has_va:
+        return 'va-only'
+    
+    # 其他情况（只有patient_status或emotion_type但没有VA值）
+    return 'none'

@@ -9,7 +9,7 @@ api_bp = Blueprint('api', __name__, url_prefix='/api')
 
 @api_bp.route("/speakers")
 def get_speakers():
-    """获取所有说话人列表"""
+    """获取所有说话人列表（查询参数方式）"""
     try:
         username = request.args.get('username', 'default')
         speakers = AudioService.get_speakers_list(username)
@@ -17,11 +17,41 @@ def get_speakers():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@api_bp.route("/speakers/<username>")
+def get_speakers_by_path(username):
+    """获取所有说话人列表（路径参数方式）"""
+    try:
+        speakers = AudioService.get_speakers_list(username)
+        return jsonify(speakers)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @api_bp.route("/audio_list/<speaker>")
 def get_audio_list(speaker):
-    """获取指定说话人的音频文件列表"""
+    """获取指定说话人的音频文件列表（查询参数方式）"""
     try:
         username = request.args.get('username', '')
+        audio_files = AudioService.get_audio_files_list(speaker, username)
+        labeled_files, annotation_completeness = LabelService.get_labeled_files(username, speaker)
+        
+        result = []
+        for audio_file in audio_files:
+            file_name = os.path.basename(audio_file)
+            result.append({
+                "file_name": file_name,
+                "path": f"/api/audio/{speaker}/{file_name}",
+                "labeled": file_name in labeled_files,
+                "annotation_completeness": annotation_completeness.get(file_name, 'none'),
+            })
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@api_bp.route("/audio_list/<username>/<speaker>")
+def get_audio_list_by_path(username, speaker):
+    """获取指定说话人的音频文件列表（路径参数方式）"""
+    try:
         audio_files = AudioService.get_audio_files_list(speaker, username)
         labeled_files, annotation_completeness = LabelService.get_labeled_files(username, speaker)
         

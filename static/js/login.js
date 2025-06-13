@@ -70,9 +70,9 @@ function handleLogin(event) {
             
             showSuccess(data.message);
             
-            // 延迟跳转到主页
+            // 延迟跳转到测试页面
             setTimeout(() => {
-                window.location.href = '/main';
+                window.location.href = '/test';
             }, 1000);
         } else {
             showError(data.message || '登录失败，请重试');
@@ -169,19 +169,3 @@ function removeExistingMessages() {
     });
 }
 
-// 注释掉自动登录检查，确保每次都需要重新登录
-// 如果需要保持登录状态，可以通过其他方式实现
-
-/**
- * 检查用户是否已登录（已禁用自动跳转）
- */
-// function checkLoginStatus() {
-//     const username = localStorage.getItem('emotion_labeling_username');
-//     if (username) {
-//         // 用户已登录，跳转到主页
-//         window.location.href = '/main';
-//     }
-// }
-
-// 页面加载时检查登录状态（已禁用）
-// checkLoginStatus();

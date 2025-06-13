@@ -70,25 +70,3 @@ def logout():
     """退出登录"""
     session.pop('username', None)
     return redirect(url_for('main.login'))
-
-@main_bp.route("/clear_login", methods=["GET"])
-def clear_login():
-    """清除登录状态，用于测试"""
-    session.pop('username', None)
-    html = """
-    <html>
-    <head>
-        <title>清除登录状态</title>
-        <script>
-            localStorage.removeItem('emotion_labeling_username');
-            setTimeout(function() {
-                window.location.href = '/';
-            }, 1000);
-        </script>
-    </head>
-    <body>
-        <p>登录状态已清除，正在跳转...</p>
-    </body>
-    </html>
-    """
-    return html
