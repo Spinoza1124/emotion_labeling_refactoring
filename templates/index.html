@@ -6,30 +6,24 @@
     <title>音频情感标注系统</title>
     <link rel="stylesheet" href="/static/css/style.css">
     
-    <!-- URL参数处理脚本 - 控制登录状态 -->
+    <!-- 登录状态检查脚本 -->
     <script>
-        // 检查URL参数，只有在没有keep_login参数时才清除登录状态
-        const urlParams = new URLSearchParams(window.location.search);
-        if (!urlParams.has('keep_login')) {
-            // 清除登录状态
-            localStorage.removeItem('emotion_labeling_username');
-        }
+        // 检查用户是否已登录
+        document.addEventListener('DOMContentLoaded', function() {
+            const username = localStorage.getItem('emotion_labeling_username');
+            if (!username) {
+                // 用户未登录，跳转到登录页面
+                window.location.href = '/login';
+                return;
+            }
+            // 用户已登录，显示主界面
+            document.getElementById('main-container').style.display = 'block';
+            document.getElementById('current-user').textContent = username;
+        });
     </script>
 </head>
 
 <body>
-
-    <!-- ===================== 登录界面 ===================== -->
-    <div id="login-modal" class="modal" style="display: flex;">
-        <div class="modal-content">
-            <h2>用户登录</h2>
-            <div class="form-group">
-                <label for="username">请输入您的姓名</label>
-                <input type="text" id="username" placeholder="请输入姓名" required>
-            </div>
-            <button id="login-button">登录</button>
-        </div>
-    </div>
 
     <!-- ===================== 主界面 ===================== -->
     <div class="container" style="display: none;" id="main-container" tabindex="-1">

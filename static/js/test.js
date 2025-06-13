@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (!currentUsername) {
             alert('请先登录！');
-            window.location.href = '/';
+            window.location.href = '/login';
             return;
         }
         
@@ -460,7 +460,7 @@ document.addEventListener('DOMContentLoaded', function() {
      * 进入主页面
      */
     function goToMainPage() {
-        window.location.href = '/?keep_login=true';
+        window.location.href = '/main?keep_login=true';
     }
     
     //==============================================

@@ -13,7 +13,7 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
 
     <!-- style CSS -->
-    <link rel="stylesheet" href="static/css/login.css" type="text/css" media="all">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}" type="text/css" media="all">
     <!-- google fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
@@ -29,17 +29,22 @@
         </div>        <div class="content-w3ls text-center">
             <img src="{{ url_for('static', filename='images/admin.png') }}" alt="管理员图标" class="img-responsive">
             <form action="#" method="post">
+                {% if error %}
+                <div class="error-message" style="color: #ff4444; background-color: #ffe6e6; border: 1px solid #ff4444; padding: 10px; margin: 10px 0; border-radius: 4px; text-align: center; font-size: 14px;">
+                    {{ error }}
+                </div>
+                {% endif %}
                 <div class="wthree-field">
                     <input name="text1" id="text1" type="text" value="" placeholder="微信昵称" required>
                 </div>
                 <div class="wthree-field">
-                    <input name="password" id="myInput" type="Password" placeholder="手机号">
+                    <input name="password" id="myInput" type="tel" placeholder="手机号" required>
                 </div>
                 <div class="wthree-field">
                     <button type="submit" class="btn">登录</button>
                 </div>
                 <div class="login-bottom">
-                    <a href="#url" class="">注册</a>
+                    <p style="color: #666; font-size: 12px; margin-top: 10px;">首次登录将自动注册账号</p>
                 </div>
             </form>
         </div>
@@ -48,6 +53,8 @@
         </div>
     </section>
 
+    <!-- 登录页面JavaScript -->
+    <script src="{{ url_for('static', filename='js/login.js') }}"></script>
 </body>
 <!-- //Body -->
 

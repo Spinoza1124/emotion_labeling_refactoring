@@ -8,6 +8,10 @@ def create_app():
     """应用工厂函数"""
     app = Flask(__name__)
     
+    # 配置session
+    app.secret_key = 'emotion_labeling_secret_key_2024'  # 生产环境中应使用环境变量
+    app.config['SESSION_TYPE'] = 'filesystem'
+    
     # 初始化配置
     Config.init_directories()
     

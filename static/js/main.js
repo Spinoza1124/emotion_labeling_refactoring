@@ -13,10 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 1. DOM元素获取与变量初始化
     //==============================================
 
-    // 登陆相关元素
-    const loginModal = document.getElementById('login-modal');
-    const usernameInput = document.getElementById('username');
-    const loginButton = document.getElementById('login-button');
+    // 主界面相关元素
     const mainContainer = document.getElementById('main-container');
     const currentUserSpan = document.getElementById('current-user');
     const logoutButton = document.getElementById('logout-button'); // 添加退出按钮引用
@@ -90,23 +87,15 @@ document.addEventListener('DOMContentLoaded', function() {
     //==============================================
     
     /**
-     * 检查用户登录状态
-     * 从localStorage获取保存的用户名，决定显示登录框还是主界面
+     * 初始化应用
+     * 获取当前用户信息并初始化界面
      */
-
-    // 优先检查登录状态
-    checkLogin();
-
-    // 修改检查登录函数
-    function checkLogin() {
+    function initApp() {
         const savedUsername = localStorage.getItem('emotion_labeling_username');
         
-        // 检查URL是否有强制登录参数
-        const urlParams = new URLSearchParams(window.location.search);
-        const forceLogin = !urlParams.has('keep_login'); // 除非有keep_login参数，否则都强制登录
-        
-        if (savedUsername && !forceLogin) {
-            // 检查是否有keep_login参数，如果没有则需要进行测试
+        if (savedUsername) {
+            // 检查URL是否有keep_login参数
+            const urlParams = new URLSearchParams(window.location.search);
             const keepLogin = urlParams.get('keep_login');
             
             if (!keepLogin) {
@@ -118,24 +107,17 @@ document.addEventListener('DOMContentLoaded', function() {
             previousUsername = currentUsername; // 保存之前的用户名
             currentUsername = savedUsername;
             currentUserSpan.textContent = currentUsername;
-            loginModal.style.display = 'none';
-            mainContainer.style.display = 'block';
             
             // 初始化应用
             initSpeakers();
-            
-            // 播放器控件将在选择音频时设置
         } else {
-            // 如果没有登录或需要强制登录，确保正确显示登录框
-            loginModal.style.display = 'flex'; 
-            mainContainer.style.display = 'none';
-            
-            // 给用户名输入框设置焦点
-            setTimeout(() => {
-                usernameInput.focus();
-            }, 100);
+            // 用户未登录，跳转到登录页面
+            window.location.href = '/login';
         }
     }
+    
+    // 初始化应用
+    initApp();
     
     // 事件监听器
     speakerSelect.addEventListener('change', handleSpeakerChange);
@@ -252,37 +234,11 @@ document.addEventListener('DOMContentLoaded', function() {
     logoutButton.addEventListener('click', function() {
         if(confirm('确定要退出登录吗？')) {
             localStorage.removeItem('emotion_labeling_username');
-            loginModal.style.display = 'flex';
-            mainContainer.style.display = 'none';
-            currentUsername = '';
-            resetPlayer();
-
-            // 重置滚动位置
-            window.scrollTo(0, 0);
+            window.location.href = '/logout';
         }
     });
     
-    // 修改登录按钮点击处理函数
-    loginButton.addEventListener('click', function() {
-        const username = usernameInput.value.trim();
-        if (username) {
-            previousUsername = currentUsername; // 保存之前的用户名
-            currentUsername = username;
-            
-            // 如果之前有登录过且用户名变了，则更新所有标签中的用户名
-            if (previousUsername && previousUsername !== currentUsername) {
-                updateUsernameInLabels(previousUsername, currentUsername);
-            }
-            
-            localStorage.setItem('emotion_labeling_username', username);
-            
-            // 每次登录都需要进行测试，跳转到测试页面
-            window.location.href = '/test?username=' + encodeURIComponent(username);
-            return;
-        } else {
-            alert('请输入您的姓名！');
-        }
-    });
+
     
     // 修改 updateUsernameInLabels 函数，移动文件夹
     function updateUsernameInLabels(oldUsername, newUsername) {
@@ -316,12 +272,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // 键盘事件：回车键登录
-    usernameInput.addEventListener('keydown', function(event) {
-        if (event.key === 'Enter') {
-            loginButton.click();
-        }
-    });
+
 
     // 添加播放/暂停控制函数
     function togglePlayPause() {

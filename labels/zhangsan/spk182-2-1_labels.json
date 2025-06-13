@@ -1,0 +1,13 @@
+[
+  {
+    "audio_file": "spk182-2-1-204.wav",
+    "v_value": 0,
+    "a_value": 3,
+    "emotion_type": "neutral",
+    "discrete_emotion": null,
+    "username": "zhangsan",
+    "patient_status": "patient",
+    "audio_duration": 3.985,
+    "timestamp": "2025-06-13 13:17:10"
+  }
+]
