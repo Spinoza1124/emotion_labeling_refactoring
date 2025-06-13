@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zxx">
+
+<!-- Head -->
+
+<head>
+
+    <title>音频情感标注系统</title>
+
+    <!-- Meta-Tags -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <!-- style CSS -->
+    <link rel="stylesheet" href="static/css/login.css" type="text/css" media="all">
+    <!-- google fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<!-- //Head -->
+
+<!-- Body -->
+
+<body>
+
+    <section class="main">
+        <div class="logo text-center">
+            <h1> <a href="index.html"> 登录界面 </a></h1>
+        </div>        <div class="content-w3ls text-center">
+            <img src="{{ url_for('static', filename='images/admin.png') }}" alt="管理员图标" class="img-responsive">
+            <form action="#" method="post">
+                <div class="wthree-field">
+                    <input name="text1" id="text1" type="text" value="" placeholder="微信昵称" required>
+                </div>
+                <div class="wthree-field">
+                    <input name="password" id="myInput" type="Password" placeholder="手机号">
+                </div>
+                <div class="wthree-field">
+                    <button type="submit" class="btn">登录</button>
+                </div>
+                <div class="login-bottom">
+                    <a href="#url" class="">注册</a>
+                </div>
+            </form>
+        </div>
+        <div class="copyright">
+            <p>© 2025 环绕智能与多模态研究室 <a target="_blank" href="http://www.mobanwang.com/" title="网页模板"></a></p>
+        </div>
+    </section>
+
+</body>
+<!-- //Body -->
+
+</html>
