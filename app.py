@@ -3,6 +3,7 @@ from config import Config
 from routes.main_routes import main_bp
 from routes.api_routes import api_bp
 from routes.test_routes import test_bp
+from routes.admin_routes import admin_bp
 
 def create_app():
     """应用工厂函数"""
@@ -17,8 +18,9 @@ def create_app():
     
     # 注册蓝图
     app.register_blueprint(main_bp)
-    app.register_blueprint(api_bp)
-    app.register_blueprint(test_bp)
+    app.register_blueprint(api_bp, url_prefix='/api')
+    app.register_blueprint(test_bp)  # 移除url_prefix，因为test_routes.py中已经包含了完整路径
+    app.register_blueprint(admin_bp, url_prefix='/admin')
     
     return app
 

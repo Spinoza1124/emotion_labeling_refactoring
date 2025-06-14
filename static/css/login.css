@@ -86,7 +86,7 @@ ol {
 }
 
 body {
-    background: url('../images/bg.jpg') no-repeat center center fixed;
+    background: url('../images/image.png') no-repeat center center fixed;
     background-size: cover;
     margin: 0;
     padding: 0;
@@ -120,7 +120,7 @@ body {
     font-family: 'Noto Sans JP', sans-serif;
 }
 .main {
-    background: url('../images/bg.jpg') no-repeat bottom;
+    background: url('../images/image.png') no-repeat bottom;
     background-size: cover;
     -webkit-background-size: cover;
     -moz-background-size: cover;
