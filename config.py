@@ -14,7 +14,6 @@ class Config:
         "TEST_AUDIO_FOLDER",
         "/mnt/shareEEx/liuyang/code/emotion_labeling_refactoring/data/test_examples"
     )
-    ORDER_LIST_FOLDER = "order_list"
     
     # Flask配置
     DEBUG = True
@@ -25,4 +24,4 @@ class Config:
     @classmethod
     def init_directories(cls):
         os.makedirs(cls.DATABASE_FOLDER, exist_ok=True)
-        os.makedirs(cls.ORDER_LIST_FOLDER, exist_ok=True)
+        # os.makedirs(cls.ORDER_LIST_FOLDER, exist_ok=True)  # 已迁移到数据库

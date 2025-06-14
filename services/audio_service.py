@@ -4,7 +4,7 @@ import glob
 import re
 import random
 from config import Config
-from utils.file_utils import safe_json_load, safe_json_save
+from services.order_service import OrderService
 
 class AudioService:
     """音频文件相关服务"""
@@ -40,33 +40,7 @@ class AudioService:
     @staticmethod
     def _get_user_speaker_order(username, speaker_groups):
         """获取用户专属的说话人排序"""
-        order_dir = os.path.join(Config.ORDER_LIST_FOLDER, username)
-        os.makedirs(order_dir, exist_ok=True)
-        speaker_order_file = os.path.join(order_dir, "speakers_order.json")
-        
-        saved_order = safe_json_load(speaker_order_file)
-        
-        if saved_order:
-            # 按保存的顺序重新排列
-            sorted_groups = []
-            existing_groups = set(speaker_groups.keys())
-            for group in saved_order:
-                if group in existing_groups:
-                    sorted_groups.append(group)
-                    existing_groups.remove(group)
-            sorted_groups.extend(list(existing_groups))
-        else:
-            # 创建新的个性化排序
-            speaker_group_list = list(speaker_groups.keys())
-            random.seed(hash(username) % (2**32))
-            random.shuffle(speaker_group_list)
-            sorted_groups = speaker_group_list
-            random.seed()
-            
-            # 保存排序
-            safe_json_save(speaker_order_file, sorted_groups)
-        
-        return sorted_groups
+        return OrderService.get_user_speaker_order(username, speaker_groups)
     
     @staticmethod
     def get_audio_files_list(speaker, username=""):
@@ -114,53 +88,7 @@ class AudioService:
     @staticmethod
     def _get_user_audio_order(speaker, username, audio_files):
         """获取用户专属的音频文件排序"""
-        user_order_dir = os.path.join(Config.ORDER_LIST_FOLDER, username)
-        os.makedirs(user_order_dir, exist_ok=True)
-        audio_order_file = os.path.join(user_order_dir, f"{speaker}_audio_order.json")
-        
-        audio_file_names = [os.path.basename(f) for f in audio_files]
-        saved_order = safe_json_load(audio_order_file)
-        
-        if saved_order:
-            # 按保存的顺序排列
-            sorted_files = []
-            saved_names = set(saved_order)
-            current_names = set(audio_file_names)
-            
-            # 添加已保存顺序的文件
-            for name in saved_order:
-                if name in current_names:
-                    for full_path in audio_files:
-                        if os.path.basename(full_path) == name:
-                            sorted_files.append(full_path)
-                            break
-            
-            # 添加新文件
-            new_files = current_names - saved_names
-            if new_files:
-                new_file_paths = [f for f in audio_files if os.path.basename(f) in new_files]
-                seed_string = f"{username}_{speaker}_new"
-                random.seed(hash(seed_string) % (2**32))
-                random.shuffle(new_file_paths)
-                random.seed()
-                sorted_files.extend(new_file_paths)
-                
-                # 更新保存的顺序
-                updated_order = [os.path.basename(f) for f in sorted_files]
-                safe_json_save(audio_order_file, updated_order)
-        else:
-            # 创建新的排序
-            seed_string = f"{username}_{speaker}"
-            random.seed(hash(seed_string) % (2**32))
-            random.shuffle(audio_files)
-            random.seed()
-            sorted_files = audio_files
-            
-            # 保存排序
-            audio_order = [os.path.basename(f) for f in sorted_files]
-            safe_json_save(audio_order_file, audio_order)
-        
-        return sorted_files
+        return OrderService.get_user_audio_order(speaker, username, audio_files)
     
     @staticmethod
     def find_audio_file(speaker, filename):
