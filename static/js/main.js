@@ -17,7 +17,8 @@ class EmotionLabelingApp {
     async initApp() {
         // 初始化用户管理
         this.userManager = new UserManager();
-        if (!this.userManager.initAuth()) {
+        const isAuthenticated = await this.userManager.initAuth();
+        if (!isAuthenticated) {
             return; // 用户未登录，已跳转
         }
         

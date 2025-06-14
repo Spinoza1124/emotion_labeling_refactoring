@@ -1,9 +1,10 @@
 import os
 import re
-from flask import Blueprint, jsonify, request, send_from_directory
+from flask import Blueprint, jsonify, request, session, send_from_directory
 from services.audio_service import AudioService
 from services.label_service import LabelService
 from services.user_service import UserService
+from models.user_model import UserModel
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -177,3 +178,46 @@ def get_play_count(username, speaker, filename):
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@api_bp.route('/user/test-settings', methods=['POST'])
+def get_user_test_settings():
+    """获取用户的测试设置"""
+    try:
+        data = request.get_json()
+        username = data.get('username')
+        
+        if not username:
+            return jsonify({'success': False, 'message': '用户名不能为空'}), 400
+        
+        # 获取用户测试设置
+        settings = UserModel().get_user_test_settings(username)
+        
+        return jsonify({
+            'success': True,
+            'skip_test': settings.get('skip_test', False),
+            'skip_consistency_test': settings.get('skip_consistency_test', False)
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'获取用户设置失败: {str(e)}'}), 500
+
+@api_bp.route('/user/session-status', methods=['GET'])
+def get_session_status():
+    """检查用户会话状态"""
+    try:
+        # 检查用户是否已登录
+        if 'username' in session and session.get('authenticated', False):
+            return jsonify({
+                'authenticated': True,
+                'username': session['username']
+            })
+        else:
+            return jsonify({
+                'authenticated': False
+            })
+            
+    except Exception as e:
+        return jsonify({
+            'authenticated': False,
+            'error': str(e)
+        }), 500

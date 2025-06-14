@@ -65,14 +65,29 @@ function handleLogin(event) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // 登录成功，保存用户信息到localStorage
-            localStorage.setItem('emotion_labeling_username', data.username);
-            
+            // 登录成功，显示成功消息
             showSuccess(data.message);
             
-            // 延迟跳转到测试页面
+            // 添加调试信息
+            console.log('登录响应数据:', data);
+            console.log('skip_test:', data.skip_test, '类型:', typeof data.skip_test);
+            console.log('skip_consistency_test:', data.skip_consistency_test, '类型:', typeof data.skip_consistency_test);
+            
+            // 根据测试跳过设置决定跳转页面
             setTimeout(() => {
-                window.location.href = '/test';
+                if (!data.skip_test) {
+                    console.log('重定向到测试页面');
+                    // 需要进行测试
+                    window.location.href = '/test';
+                } else if (!data.skip_consistency_test) {
+                    console.log('重定向到一致性测试页面');
+                    // 跳过测试但需要进行一致性检验
+                    window.location.href = '/consistency_test';
+                } else {
+                    console.log('重定向到主页面');
+                    // 跳过所有测试，直接进入主页面
+                    window.location.href = '/main';
+                }
             }, 1000);
         } else {
             showError(data.message || '登录失败，请重试');

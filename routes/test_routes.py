@@ -78,7 +78,7 @@ def get_test_questions():
         random.shuffle(questions)
         
         # 限制题目数量（例如最多10题）
-        questions = questions[:10]
+        questions = questions[:1]
         
         return jsonify({
             'success': True,

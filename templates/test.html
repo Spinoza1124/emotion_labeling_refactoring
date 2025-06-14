@@ -160,16 +160,12 @@
         <div class="test-header">
             <h1>标注能力测试</h1>
             <p>欢迎，<span id="test-username"></span>！</p>
-            <p>请完成以下测试以验证您的标注能力。需要达到90%的正确率才能进入正式标注。</p>
-            <div style="margin-top: 15px;">
-                <button class="test-button secondary" id="skip-test-header-btn" onclick="skipTest()">跳过测试，直接进入标注页面</button>
-            </div>
+            <p>请完成以下测试以验证您的标注能力。需要达到90%的正确率才能进入一致性测试。</p>
         </div>
         
         <div class="test-progress">
             <div class="progress-info">
                 <span>进度: <span id="current-question">1</span> / <span id="total-questions">10</span></span>
-                <span style="float: right;">正确率: <span id="accuracy">0%</span></span>
             </div>
             <div class="progress-bar" id="progress-bar" style="width: 10%;"></div>
         </div>
@@ -225,7 +221,6 @@
         </div>
         
         <div class="test-controls">
-            <button class="test-button secondary" id="skip-test-btn">跳过测试</button>
             <button class="test-button primary" id="submit-answer-btn" disabled>提交答案</button>
             <button class="test-button primary" id="next-question-btn" style="display: none;">下一题</button>
             <button class="test-button primary" id="finish-test-btn" style="display: none;">完成测试</button>

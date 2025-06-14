@@ -20,6 +20,13 @@ class Config:
     HOST = "0.0.0.0"
     PORT = 5000
     
+    # 安全配置
+    SECRET_KEY = os.getenv('SECRET_KEY', 'emotion_labeling_secret_key_2024')
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SECURE = False  # 开发环境设为False，生产环境应设为True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    PERMANENT_SESSION_LIFETIME = 3600 * 24  # 24小时
+    
     # 确保必要目录存在
     @classmethod
     def init_directories(cls):

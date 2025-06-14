@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const testUsernameSpan = document.getElementById('test-username');
     const currentQuestionSpan = document.getElementById('current-question');
     const totalQuestionsSpan = document.getElementById('total-questions');
-    const accuracySpan = document.getElementById('accuracy');
+    // 移除了正确率显示元素的获取
     const progressBar = document.getElementById('progress-bar');
     const testQuestion = document.getElementById('test-question');
     const testAudio = document.getElementById('test-audio');
@@ -27,7 +27,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const testASlider = document.getElementById('test-a-slider');
     const testVDisplay = document.getElementById('test-v-display');
     const testADisplay = document.getElementById('test-a-display');
-    const skipTestBtn = document.getElementById('skip-test-btn');
     const submitAnswerBtn = document.getElementById('submit-answer-btn');
     const nextQuestionBtn = document.getElementById('next-question-btn');
     const finishTestBtn = document.getElementById('finish-test-btn');
@@ -158,9 +157,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const progress = ((index + 1) / testQuestions.length) * 100;
         progressBar.style.width = progress + '%';
         
-        // 更新正确率
-        const accuracy = index > 0 ? Math.round((correctAnswers / index) * 100) : 0;
-        accuracySpan.textContent = accuracy + '%';
+        // 移除了实时正确率更新逻辑
         
         // 设置音频
         testAudio.src = `/api/test/audio/${question.filename}`;
@@ -404,34 +401,38 @@ document.addEventListener('DOMContentLoaded', function() {
         testResult.className = `test-result ${passed ? 'pass' : 'fail'}`;
         
         if (passed) {
-            testResult.innerHTML = `
-                <h2>🎉 恭喜通过测试！</h2>
-                <p>您的正确率为 <strong>${accuracy}%</strong>，已达到90%的要求。</p>
-                <p>现在可以进入正式的标注页面了。</p>
-                <button class="test-button primary" onclick="goToMainPage()">进入标注页面</button>
-            `;
-            
-            // 保存测试通过状态
+            // 保存测试通过状态并更新用户设置
             localStorage.setItem('test_passed_' + currentUsername, 'true');
+            
+            // 更新用户的测试跳过设置
+            updateUserTestSettings(currentUsername, true, false)
+                .then(() => {
+                    testResult.innerHTML = `
+                        <h2>🎉 恭喜通过测试！</h2>
+                        <p>您的正确率为 <strong>${accuracy}%</strong>，已达到90%的要求。</p>
+                        <p>现在将进入一致性测试环节。</p>
+                        <button class="test-button primary" onclick="goToConsistencyTest()">进入一致性测试</button>
+                        <button class="test-button secondary" onclick="goToMainPage()">跳过一致性测试，直接进入标注页面</button>
+                    `;
+                })
+                .catch(error => {
+                    console.error('更新用户测试设置失败:', error);
+                    // 即使更新失败，也显示测试通过界面
+                    testResult.innerHTML = `
+                        <h2>🎉 恭喜通过测试！</h2>
+                        <p>您的正确率为 <strong>${accuracy}%</strong>，已达到90%的要求。</p>
+                        <p>现在将进入一致性测试环节。</p>
+                        <button class="test-button primary" onclick="goToConsistencyTest()">进入一致性测试</button>
+                        <button class="test-button secondary" onclick="goToMainPage()">跳过一致性测试，直接进入标注页面</button>
+                    `;
+                });
         } else {
             testResult.innerHTML = `
                 <h2>❌ 测试未通过</h2>
                 <p>您的正确率为 <strong>${accuracy}%</strong>，未达到90%的要求。</p>
                 <p>请重新学习标注规则后再次尝试。</p>
                 <button class="test-button primary" onclick="retakeTest()">重新测试</button>
-                <button class="test-button secondary" onclick="goToMainPage()">跳过测试</button>
             `;
-        }
-    }
-    
-    /**
-     * 跳过测试
-     */
-    function skipTest() {
-        if (confirm('确定要跳过测试吗？跳过测试将直接进入标注页面。\n\n注意：跳过测试后您将直接获得标注权限，请确保您已熟悉标注规则。')) {
-            // 标记用户已通过测试（跳过也算通过）
-            localStorage.setItem('test_passed_' + currentUsername, 'true');
-            goToMainPage();
         }
     }
     
@@ -463,19 +464,60 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.href = '/main?keep_login=true';
     }
     
+    /**
+     * 进入一致性测试页面
+     */
+    function goToConsistencyTest() {
+        // 传递用户名到一致性测试页面
+        window.location.href = '/consistency-test?username=' + encodeURIComponent(currentUsername);
+    }
+    
+    /**
+     * 更新用户测试设置
+     * @param {string} username - 用户名
+     * @param {boolean} skipTest - 是否跳过测试
+     * @param {boolean} skipConsistencyTest - 是否跳过一致性测试
+     * @returns {Promise} 更新结果
+     */
+    async function updateUserTestSettings(username, skipTest, skipConsistencyTest) {
+        try {
+            const response = await fetch('/admin/api/users/test-settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: username,
+                    skip_test: skipTest,
+                    skip_consistency_test: skipConsistencyTest
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || '更新用户测试设置失败');
+            }
+            
+            return data;
+        } catch (error) {
+            console.error('更新用户测试设置时发生错误:', error);
+            throw error;
+        }
+    }
+    
     //==============================================
     // 3. 事件监听器
     //==============================================
     
-    if (skipTestBtn) skipTestBtn.addEventListener('click', skipTest);
     if (submitAnswerBtn) submitAnswerBtn.addEventListener('click', submitAnswer);
     if (nextQuestionBtn) nextQuestionBtn.addEventListener('click', () => showQuestion(currentQuestionIndex + 1));
     if (finishTestBtn) finishTestBtn.addEventListener('click', showTestResult);
     
     // 全局函数（供HTML调用）
     window.goToMainPage = goToMainPage;
+    window.goToConsistencyTest = goToConsistencyTest;
     window.retakeTest = retakeTest;
-    window.skipTest = skipTest;
     
     //==============================================
     // 4. 初始化

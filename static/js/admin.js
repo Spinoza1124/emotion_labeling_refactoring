@@ -36,6 +36,10 @@ class AdminDashboard {
             this.loadUsersData();
         });
 
+        document.getElementById('refresh-test-settings')?.addEventListener('click', () => {
+            this.loadTestSettingsData();
+        });
+
         document.getElementById('refresh-speakers')?.addEventListener('click', () => {
             this.loadSpeakersData();
         });
@@ -51,6 +55,15 @@ class AdminDashboard {
 
         document.getElementById('backup-btn')?.addEventListener('click', () => {
             this.backupDatabase();
+        });
+
+        // 一致性分析按钮
+        document.getElementById('calculate-consistency-btn')?.addEventListener('click', () => {
+            this.calculateConsistency();
+        });
+
+        document.getElementById('export-consistency-btn')?.addEventListener('click', () => {
+            this.exportConsistencyReport();
         });
 
         // 模态框关闭
@@ -117,6 +130,9 @@ class AdminDashboard {
             case 'users':
                 this.loadUsersData();
                 break;
+            case 'test-settings':
+                this.loadTestSettingsData();
+                break;
             case 'speakers':
                 this.loadSpeakersData();
                 break;
@@ -125,6 +141,9 @@ class AdminDashboard {
                 break;
             case 'quality':
                 this.loadQualityData();
+                break;
+            case 'consistency':
+                this.loadConsistencyData();
                 break;
             case 'system':
                 this.loadSystemStatus();
@@ -758,6 +777,317 @@ class AdminDashboard {
         setTimeout(() => {
             resultDiv.style.display = 'none';
         }, 5000);
+    }
+
+    /**
+     * 加载一致性分析数据
+     */
+    async loadConsistencyData() {
+        try {
+            // 加载统计信息
+            const statsResponse = await fetch('/admin/api/consistency/stats');
+            const statsData = await statsResponse.json();
+            
+            if (statsResponse.ok) {
+                this.updateConsistencyStats(statsData);
+            }
+            
+            // 加载用户列表
+            const usersResponse = await fetch('/admin/api/consistency/users');
+            const usersData = await usersResponse.json();
+            
+            if (usersResponse.ok) {
+                this.updateConsistencyUserSelect(usersData.users);
+            }
+        } catch (error) {
+            this.showError('加载一致性数据失败: ' + error.message);
+        }
+    }
+
+    /**
+     * 更新一致性统计信息
+     * @param {Object} data - 统计数据
+     */
+    updateConsistencyStats(data) {
+        document.getElementById('consistency-users-count').textContent = data.users_count;
+        document.getElementById('consistency-samples-count').textContent = data.samples_count;
+    }
+
+    /**
+     * 更新一致性用户选择下拉框
+     * @param {Array} users - 用户列表
+     */
+    updateConsistencyUserSelect(users) {
+        const select = document.getElementById('consistency-user-select');
+        select.innerHTML = '<option value="">请选择用户</option>';
+        
+        users.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user;
+            option.textContent = user;
+            select.appendChild(option);
+        });
+    }
+
+    /**
+     * 计算用户一致性
+     */
+    async calculateConsistency() {
+        const username = document.getElementById('consistency-user-select').value;
+        
+        if (!username) {
+            this.showError('请先选择用户');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/admin/api/consistency/calculate/${username}`);
+            const data = await response.json();
+            
+            if (response.ok) {
+                this.displayConsistencyReport(data);
+            } else {
+                this.showError('计算一致性失败: ' + data.error);
+            }
+        } catch (error) {
+            this.showError('网络错误: ' + error.message);
+        }
+    }
+
+    /**
+     * 显示一致性报告
+     * @param {Object} data - 一致性数据
+     */
+    displayConsistencyReport(data) {
+        const reportDiv = document.getElementById('consistency-report');
+        
+        reportDiv.innerHTML = `
+            <h4>用户 ${data.username} 的一致性分析报告</h4>
+            <div class="consistency-summary">
+                <p><strong>总样本数:</strong> ${data.total_samples}</p>
+                <p><strong>总体一致性:</strong> ${data.overall_consistency.toFixed(2)}%</p>
+            </div>
+            
+            <div class="consistency-details">
+                <h5>各维度一致性:</h5>
+                <table class="consistency-table">
+                    <thead>
+                        <tr>
+                            <th>维度</th>
+                            <th>一致样本数</th>
+                            <th>一致性百分比</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>V值 (效价)</td>
+                            <td>${data.consistency_scores.v_value}</td>
+                            <td>${data.consistency_percentages.v_value.toFixed(2)}%</td>
+                        </tr>
+                        <tr>
+                            <td>A值 (唤醒度)</td>
+                            <td>${data.consistency_scores.a_value}</td>
+                            <td>${data.consistency_percentages.a_value.toFixed(2)}%</td>
+                        </tr>
+                        <tr>
+                            <td>情感类型</td>
+                            <td>${data.consistency_scores.emotion_type}</td>
+                            <td>${data.consistency_percentages.emotion_type.toFixed(2)}%</td>
+                        </tr>
+                        <tr>
+                            <td>离散情感</td>
+                            <td>${data.consistency_scores.discrete_emotion}</td>
+                            <td>${data.consistency_percentages.discrete_emotion.toFixed(2)}%</td>
+                        </tr>
+                        <tr>
+                            <td>患者状态</td>
+                            <td>${data.consistency_scores.patient_status}</td>
+                            <td>${data.consistency_percentages.patient_status.toFixed(2)}%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        // 存储详细结果用于导出
+        this.currentConsistencyData = data;
+        
+        reportDiv.style.display = 'block';
+    }
+
+    /**
+     * 导出一致性报告
+     */
+    exportConsistencyReport() {
+        if (!this.currentConsistencyData) {
+            this.showError('请先计算一致性分析');
+            return;
+        }
+        
+        const data = this.currentConsistencyData;
+        let csvContent = "音频文件,V值一致,A值一致,情感类型一致,离散情感一致,患者状态一致,用户V值,用户A值,用户情感类型,用户离散情感,用户患者状态,标准V值,标准A值,标准情感类型,标准离散情感,标准患者状态\n";
+        
+        data.detailed_results.forEach(result => {
+            csvContent += [
+                result.audio_file,
+                result.v_consistent ? '是' : '否',
+                result.a_consistent ? '是' : '否',
+                result.emotion_type_consistent ? '是' : '否',
+                result.discrete_consistent ? '是' : '否',
+                result.patient_consistent ? '是' : '否',
+                result.user_values.v_value || '',
+                result.user_values.a_value || '',
+                result.user_values.emotion_type || '',
+                result.user_values.discrete_emotion || '',
+                result.user_values.patient_status || '',
+                result.standard_values.v_value || '',
+                result.standard_values.a_value || '',
+                result.standard_values.emotion_type || '',
+                result.standard_values.discrete_emotion || '',
+                result.standard_values.patient_status || ''
+            ].join(',') + '\n';
+        });
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `consistency_report_${data.username}_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        this.showSuccess('一致性报告已导出');
+    }
+
+    /**
+     * 加载测试设置数据
+     */
+    async loadTestSettingsData() {
+        try {
+            const response = await fetch('/admin/api/users/test-settings');
+            const data = await response.json();
+
+            if (response.ok) {
+                this.updateTestSettingsTable(data.users);
+            } else {
+                this.showError('加载测试设置数据失败: ' + data.error);
+            }
+        } catch (error) {
+            this.showError('网络错误: ' + error.message);
+        }
+    }
+
+    /**
+     * 更新测试设置表格
+     * @param {Array} users - 用户数据数组
+     */
+    updateTestSettingsTable(users) {
+        const tbody = document.getElementById('test-settings-tbody');
+        tbody.innerHTML = '';
+
+        users.forEach(user => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${user.wechat_name}</td>
+                <td>${user.phone_number}</td>
+                <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                <td>
+                    <label class="switch">
+                        <input type="checkbox" ${user.skip_test ? 'checked' : ''} 
+                               onchange="adminDashboard.updateTestSetting('${user.wechat_name}', 'skip_test', this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </td>
+                <td>
+                    <label class="switch">
+                        <input type="checkbox" ${user.skip_consistency_test ? 'checked' : ''} 
+                               onchange="adminDashboard.updateTestSetting('${user.wechat_name}', 'skip_consistency_test', this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-secondary" 
+                            onclick="adminDashboard.resetUserTestSettings('${user.wechat_name}')">
+                        重置
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    /**
+     * 更新用户测试设置
+     * @param {string} username - 用户名
+     * @param {string} setting - 设置类型
+     * @param {boolean} value - 设置值
+     */
+    async updateTestSetting(username, setting, value) {
+        try {
+            const requestData = {
+                username: username
+            };
+            requestData[setting] = value;
+
+            const response = await fetch('/admin/api/users/test-settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestData)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                this.showSuccess(data.message);
+            } else {
+                this.showError('更新失败: ' + data.message);
+                // 恢复开关状态
+                this.loadTestSettingsData();
+            }
+        } catch (error) {
+            this.showError('网络错误: ' + error.message);
+            // 恢复开关状态
+            this.loadTestSettingsData();
+        }
+    }
+
+    /**
+     * 重置用户测试设置
+     * @param {string} username - 用户名
+     */
+    async resetUserTestSettings(username) {
+        if (!confirm(`确定要重置用户 ${username} 的测试设置吗？这将要求用户重新进行测试和一致性检验。`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/admin/api/users/test-settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: username,
+                    skip_test: false,
+                    skip_consistency_test: false
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                this.showSuccess('用户测试设置已重置');
+                this.loadTestSettingsData();
+            } else {
+                this.showError('重置失败: ' + data.message);
+            }
+        } catch (error) {
+            this.showError('网络错误: ' + error.message);
+        }
     }
 }
 

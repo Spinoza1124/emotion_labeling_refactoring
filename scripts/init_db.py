@@ -21,6 +21,7 @@ from datetime import datetime
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import Config
+from models.user_model import UserModel
 
 def init_database():
     """
@@ -87,6 +88,11 @@ def init_database():
     conn.close()
     
     print(f"数据库初始化完成: {db_path}")
+    
+    # 初始化用户数据库
+    print("正在初始化用户数据库...")
+    user_model = UserModel()
+    print("用户数据库初始化完成")
 
 def migrate_json_to_db():
     """

@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>一致性测试 - 音频情感标注系统</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        body {
+            background-image: url('/static/images/village.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }
+        
+        .consistency-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .consistency-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .consistency-progress {
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .progress-bar {
+            background-color: #2196F3;
+            height: 20px;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+        
+        .consistency-audio-section {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .consistency-question {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .audio-controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .audio-player {
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .annotation-section {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .slider-container {
+            margin: 10px 0;
+        }
+        
+        .slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #ddd;
+            outline: none;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        
+        .slider:hover {
+            opacity: 1;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #2196F3;
+            cursor: pointer;
+        }
+        
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #2196F3;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .slider-value {
+            text-align: center;
+            font-weight: bold;
+            color: #2196F3;
+            margin-top: 5px;
+        }
+        
+        .radio-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .radio-item input[type="radio"] {
+            margin: 0;
+        }
+        
+        .btn {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        .btn:hover {
+            background-color: #1976D2;
+        }
+        
+        .btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+        
+        .btn-success {
+            background-color: #28a745;
+        }
+        
+        .btn-success:hover {
+            background-color: #218838;
+        }
+        
+        .navigation-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        
+        .completion-section {
+            text-align: center;
+            padding: 40px 20px;
+            background-color: white;
+            border-radius: 10px;
+        }
+        
+        .completion-section h2 {
+            color: #28a745;
+            margin-bottom: 20px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .username-section {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .username-input {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            margin: 0 10px;
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="consistency-container">
+        <div class="consistency-header">
+            <h1>一致性测试</h1>
+            <p>请根据音频内容进行情感标注，无需考虑正确率</p>
+        </div>
+        
+        <!-- 用户名输入区域 -->
+        <div id="usernameSection" class="username-section">
+            <h3>请输入您的用户名</h3>
+            <input type="text" id="usernameInput" class="username-input" placeholder="请输入用户名">
+            <button onclick="startConsistencyTest()" class="btn">开始测试</button>
+        </div>
+        
+        <!-- 测试区域 -->
+        <div id="testSection" class="hidden">
+            <!-- 进度条 -->
+            <div class="consistency-progress">
+                <div class="progress-info">
+                    <span id="progressText">题目 1 / 50</span>
+                </div>
+                <div class="progress-bar" id="progressBar" style="width: 2%;"></div>
+            </div>
+            
+            <!-- 音频播放区域 -->
+            <div class="consistency-audio-section">
+                <div class="consistency-question" id="consistencyQuestion">
+                    正在加载题目...
+                </div>
+                <div class="audio-controls">
+                    <audio id="audioPlayer" class="audio-player" controls>
+                        您的浏览器不支持音频播放。
+                    </audio>
+                </div>
+            </div>
+            
+            <!-- 标注区域 -->
+            <div class="annotation-section">
+                <div class="form-group">
+                    <label>效价 (V值): 从负面到正面</label>
+                    <div class="slider-container">
+                        <input type="range" id="vSlider" class="slider" min="-3" max="3" step="0.5" value="0">
+                        <div class="slider-value" id="vValue">0</div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>唤醒度 (A值): 从平静到激动</label>
+                    <div class="slider-container">
+                        <input type="range" id="aSlider" class="slider" min="1" max="5" step="0.5" value="3">
+                        <div class="slider-value" id="aValue">3</div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>情感类型:</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="neutral" name="emotionType" value="neutral">
+                            <label for="neutral">中性</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="nonNeutral" name="emotionType" value="non-neutral" checked>
+                            <label for="nonNeutral">非中性</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>离散情感:</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="happy" name="discreteEmotion" value="happy">
+                            <label for="happy">高兴</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="sad" name="discreteEmotion" value="sad">
+                            <label for="sad">悲伤</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="angry" name="discreteEmotion" value="angry">
+                            <label for="angry">愤怒</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="fear" name="discreteEmotion" value="fear">
+                            <label for="fear">恐惧</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="surprise" name="discreteEmotion" value="surprise">
+                            <label for="surprise">惊讶</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="disgust" name="discreteEmotion" value="disgust">
+                            <label for="disgust">厌恶</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="neutral_discrete" name="discreteEmotion" value="neutral">
+                            <label for="neutral_discrete">中性</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>患者状态:</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="patient" name="patientStatus" value="patient" checked>
+                            <label for="patient">患者</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="normal" name="patientStatus" value="normal">
+                            <label for="normal">正常人</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 导航按钮 -->
+            <div class="navigation-buttons">
+                <button id="prevBtn" class="btn btn-secondary" onclick="previousQuestion()" disabled>上一题</button>
+                <button id="nextBtn" class="btn" onclick="nextQuestion()">下一题</button>
+                <button id="submitBtn" class="btn btn-success hidden" onclick="submitConsistencyTest()">提交测试</button>
+            </div>
+        </div>
+        
+        <!-- 完成区域 -->
+        <div id="completionSection" class="completion-section hidden">
+            <h2>一致性测试完成！</h2>
+            <p>感谢您完成一致性测试，您的标注结果已保存。</p>
+            <button onclick="location.reload()" class="btn">重新开始</button>
+        </div>
+    </div>
+    
+    <script src="/static/js/consistency_test.js"></script>
+</body>
+</html>

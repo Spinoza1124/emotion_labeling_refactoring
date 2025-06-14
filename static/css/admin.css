@@ -441,6 +441,87 @@ body {
     gap: 10px;
 }
 
+/* 一致性分析样式 */
+.consistency-summary {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    margin: 15px 0;
+}
+
+.consistency-summary p {
+    margin: 5px 0;
+    font-size: 16px;
+}
+
+.consistency-details {
+    margin-top: 20px;
+}
+
+.consistency-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.consistency-table th,
+.consistency-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.consistency-table th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+
+.consistency-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.consistency-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.consistency-controls select {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.consistency-controls button {
+    padding: 8px 16px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.consistency-controls button:hover {
+    background-color: #0056b3;
+}
+
+.consistency-controls button:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+
+#consistency-report {
+    display: none;
+    margin-top: 20px;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #fff;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
     .admin-container {
@@ -474,6 +555,17 @@ body {
     .modal-content {
         width: 95%;
         margin: 10% auto;
+    }
+    
+    .consistency-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .consistency-controls select,
+    .consistency-controls button {
+        width: 100%;
+        margin: 5px 0;
     }
 }
 
@@ -536,4 +628,123 @@ body {
 .badge-info {
     background-color: #d1ecf1;
     color: #0c5460;
+}
+
+/* 测试设置管理样式 */
+.test-settings-management {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.settings-card {
+    padding: 25px;
+}
+
+.settings-card h3 {
+    color: #333;
+    margin-bottom: 10px;
+    font-size: 1.3rem;
+}
+
+.settings-description {
+    color: #666;
+    margin-bottom: 20px;
+    line-height: 1.6;
+}
+
+.settings-controls {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.test-settings-table {
+    overflow-x: auto;
+}
+
+.test-settings-table table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.test-settings-table th,
+.test-settings-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.test-settings-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #333;
+}
+
+.test-settings-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* 开关样式 */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 24px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #667eea;
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px #667eea;
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+/* 小按钮样式 */
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.875rem;
+    border-radius: 4px;
+}
+
+.btn-sm:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }

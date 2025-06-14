@@ -25,9 +25,11 @@
             <ul class="nav-menu">
                 <li><a href="#overview" class="nav-link active" data-section="overview">系统概览</a></li>
                 <li><a href="#users" class="nav-link" data-section="users">用户管理</a></li>
+                <li><a href="#test-settings" class="nav-link" data-section="test-settings">测试设置</a></li>
                 <li><a href="#speakers" class="nav-link" data-section="speakers">说话人统计</a></li>
                 <li><a href="#progress" class="nav-link" data-section="progress">标注进度</a></li>
                 <li><a href="#quality" class="nav-link" data-section="quality">质量分析</a></li>
+                <li><a href="#consistency" class="nav-link" data-section="consistency">一致性分析</a></li>
                 <li><a href="#export" class="nav-link" data-section="export">数据导出</a></li>
                 <li><a href="#system" class="nav-link" data-section="system">系统状态</a></li>
             </ul>
@@ -196,6 +198,88 @@
                     </div>
                 </div>
                 <div id="export-result" class="result-message"></div>
+            </section>
+
+            <!-- 测试设置管理 -->
+            <section id="test-settings-section" class="content-section">
+                <h2>测试设置管理</h2>
+                <div class="test-settings-management">
+                    <div class="settings-card">
+                        <h3>用户测试跳过设置</h3>
+                        <p class="settings-description">管理用户是否需要经过测试和一致性检验页面。已通过测试的用户可以跳过这些步骤，直接进入标注页面。</p>
+                        
+                        <div class="settings-controls">
+                            <button id="refresh-test-settings" class="btn btn-primary">刷新用户列表</button>
+                        </div>
+                        
+                        <div class="test-settings-table">
+                            <table id="test-settings-table">
+                                <thead>
+                                    <tr>
+                                        <th>用户名</th>
+                                        <th>手机号</th>
+                                        <th>注册时间</th>
+                                        <th>跳过测试</th>
+                                        <th>跳过一致性测试</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="test-settings-tbody">
+                                    <!-- 动态加载用户测试设置 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 一致性分析 -->
+            <section id="consistency-section" class="content-section">
+                <h2>一致性分析</h2>
+                <div class="consistency-analysis">
+                    <div class="analysis-card">
+                        <h3>用户一致性统计</h3>
+                        <div class="user-consistency-stats">
+                            <div class="stat-item">
+                                <span class="stat-label">参与一致性测试用户数:</span>
+                                <span id="consistency-users-count" class="stat-value">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">总测试样本数:</span>
+                                <span id="consistency-samples-count" class="stat-value">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">平均一致性得分:</span>
+                                <span id="average-consistency-score" class="stat-value">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="analysis-card">
+                        <h3>用户一致性详情</h3>
+                        <div class="user-selector">
+                            <label for="consistency-user-select">选择用户:</label>
+                            <select id="consistency-user-select">
+                                <option value="">-- 请选择用户 --</option>
+                            </select>
+                            <button id="calculate-consistency" class="btn btn-primary">计算一致性</button>
+                        </div>
+                        <div id="consistency-results" class="consistency-results">
+                            <!-- 一致性计算结果将在这里显示 -->
+                        </div>
+                    </div>
+                    
+                    <div class="analysis-card">
+                        <h3>详细一致性报告</h3>
+                        <div class="report-controls">
+                            <button id="generate-consistency-report" class="btn btn-secondary">生成详细报告</button>
+                            <button id="export-consistency-data" class="btn btn-secondary">导出一致性数据</button>
+                        </div>
+                        <div id="detailed-consistency-report" class="detailed-report">
+                            <!-- 详细报告将在这里显示 -->
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <!-- 系统状态 -->

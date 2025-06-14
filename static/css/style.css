@@ -726,6 +726,28 @@ button:focus {
     outline: none;
 }
 
+/* 导航按钮样式 */
+.nav-button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    margin: 0 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+}
+
+.nav-button:hover {
+    background-color: #2980b9;
+}
+
+.nav-button:focus {
+    outline: 2px solid #3498db;
+    outline-offset: 2px;
+}
+
 /*===================================================
     10. 登录模态框样式
 ===================================================*/

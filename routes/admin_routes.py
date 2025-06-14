@@ -64,6 +64,264 @@ def admin_login():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@admin_bp.route('/api/consistency/stats')
+def get_consistency_stats():
+    """
+    获取一致性测试统计信息
+    
+    Returns:
+        JSON响应，包含一致性测试统计信息
+    """
+    try:
+        from services.database_service import DatabaseService
+        
+        conn = DatabaseService.get_connection()
+        cursor = conn.cursor()
+        
+        # 获取参与一致性测试的用户数
+        cursor.execute('SELECT COUNT(DISTINCT username) FROM consistency_test_results')
+        users_count = cursor.fetchone()[0] or 0
+        
+        # 获取总测试样本数
+        cursor.execute('SELECT COUNT(*) FROM consistency_test_results')
+        samples_count = cursor.fetchone()[0] or 0
+        
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'users_count': users_count,
+            'samples_count': samples_count
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@admin_bp.route('/api/users/test-settings', methods=['GET'])
+@admin_required
+def get_users_test_settings():
+    """
+    获取所有用户的测试跳过设置
+    
+    Returns:
+        JSON响应，包含所有用户的测试设置信息
+    """
+    try:
+        from models.user_model import UserModel
+        
+        user_model = UserModel()
+        users = user_model.get_all_users()
+        
+        return jsonify({
+            'success': True,
+            'users': users
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@admin_bp.route('/api/users/test-settings', methods=['POST'])
+@admin_required
+def update_user_test_settings():
+    """
+    更新用户的测试跳过设置
+    
+    Returns:
+        JSON响应，包含更新结果
+    """
+    try:
+        from models.user_model import UserModel
+        
+        data = request.get_json()
+        username = data.get('username')
+        skip_test = data.get('skip_test')
+        skip_consistency_test = data.get('skip_consistency_test')
+        
+        if not username:
+            return jsonify({"error": "用户名不能为空"}), 400
+        
+        user_model = UserModel()
+        success = user_model.update_user_test_settings(
+            username, 
+            skip_test=skip_test, 
+            skip_consistency_test=skip_consistency_test
+        )
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': '用户测试设置更新成功'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': '用户不存在或更新失败'
+            }), 404
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@admin_bp.route('/api/consistency/users')
+def get_consistency_users():
+    """
+    获取参与一致性测试的用户列表
+    
+    Returns:
+        JSON响应，包含用户列表
+    """
+    try:
+        from services.database_service import DatabaseService
+        
+        conn = DatabaseService.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT DISTINCT username FROM consistency_test_results ORDER BY username')
+        users = [row[0] for row in cursor.fetchall()]
+        
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'users': users
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@admin_bp.route('/api/consistency/calculate/<username>')
+def calculate_user_consistency(username):
+    """
+    计算指定用户的一致性
+    
+    Args:
+        username (str): 用户名
+        
+    Returns:
+        JSON响应，包含用户一致性分析结果
+    """
+    try:
+        import json
+        import os
+        from services.database_service import DatabaseService
+        
+        # 获取用户的一致性测试结果
+        conn = DatabaseService.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT audio_file, v_value, a_value, emotion_type, discrete_emotion, patient_status
+            FROM consistency_test_results 
+            WHERE username = ?
+        ''', (username,))
+        
+        user_results = cursor.fetchall()
+        conn.close()
+        
+        if not user_results:
+            return jsonify({
+                'success': False,
+                'error': '该用户没有一致性测试数据'
+            }), 404
+        
+        # 读取标准答案
+        consistency_dir = '/mnt/shareEEx/liuyang/code/emotion_labeling_refactoring/data/consistency_test'
+        standard_answers = {}
+        
+        for filename in os.listdir(consistency_dir):
+            if filename.endswith('.json'):
+                json_path = os.path.join(consistency_dir, filename)
+                with open(json_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    audio_file = data.get('audio_file')
+                    if audio_file:
+                        standard_answers[audio_file] = data
+        
+        # 计算一致性
+        total_samples = len(user_results)
+        consistency_scores = {
+            'v_value': 0,
+            'a_value': 0,
+            'emotion_type': 0,
+            'discrete_emotion': 0,
+            'patient_status': 0
+        }
+        
+        detailed_results = []
+        
+        for result in user_results:
+            audio_file = result[0]
+            user_v = result[1]
+            user_a = result[2]
+            user_emotion_type = result[3]
+            user_discrete = result[4]
+            user_patient = result[5]
+            
+            if audio_file in standard_answers:
+                standard = standard_answers[audio_file]
+                
+                # V值一致性（允许±0.5误差）
+                v_consistent = abs(float(user_v or 0) - float(standard.get('v_value', 0))) <= 0.5
+                if v_consistent:
+                    consistency_scores['v_value'] += 1
+                
+                # A值一致性（允许±0.5误差）
+                a_consistent = abs(float(user_a or 0) - float(standard.get('a_value', 0))) <= 0.5
+                if a_consistent:
+                    consistency_scores['a_value'] += 1
+                
+                # 情感类型一致性
+                emotion_type_consistent = user_emotion_type == standard.get('emotion_type')
+                if emotion_type_consistent:
+                    consistency_scores['emotion_type'] += 1
+                
+                # 离散情感一致性
+                discrete_consistent = user_discrete == standard.get('discrete_emotion')
+                if discrete_consistent:
+                    consistency_scores['discrete_emotion'] += 1
+                
+                # 患者状态一致性
+                patient_consistent = user_patient == standard.get('patient_status')
+                if patient_consistent:
+                    consistency_scores['patient_status'] += 1
+                
+                detailed_results.append({
+                    'audio_file': audio_file,
+                    'v_consistent': v_consistent,
+                    'a_consistent': a_consistent,
+                    'emotion_type_consistent': emotion_type_consistent,
+                    'discrete_consistent': discrete_consistent,
+                    'patient_consistent': patient_consistent,
+                    'user_values': {
+                        'v_value': user_v,
+                        'a_value': user_a,
+                        'emotion_type': user_emotion_type,
+                        'discrete_emotion': user_discrete,
+                        'patient_status': user_patient
+                    },
+                    'standard_values': standard
+                })
+        
+        # 计算百分比
+        consistency_percentages = {}
+        for key, score in consistency_scores.items():
+            consistency_percentages[key] = (score / total_samples * 100) if total_samples > 0 else 0
+        
+        # 计算总体一致性
+        overall_consistency = sum(consistency_percentages.values()) / len(consistency_percentages)
+        
+        return jsonify({
+            'success': True,
+            'username': username,
+            'total_samples': total_samples,
+            'consistency_scores': consistency_scores,
+            'consistency_percentages': consistency_percentages,
+            'overall_consistency': overall_consistency,
+            'detailed_results': detailed_results
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @admin_bp.route('/logout', methods=['POST'])
 @admin_required
 def admin_logout():
