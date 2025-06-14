@@ -103,6 +103,23 @@ class LabelService:
         
         if not os.path.exists(user_label_dir):
             return None
+        
+        # 处理分组说话人
+        if re.match(r'spk\d+$', speaker):
+            all_speakers = [
+                d for d in os.listdir(Config.AUDIO_FOLDER)
+                if os.path.isdir(os.path.join(Config.AUDIO_FOLDER, d)) 
+                and d.startswith(speaker + '-')
+            ]
+            
+            for sub_speaker in all_speakers:
+                label = LabelService._get_speaker_label(user_label_dir, sub_speaker, filename)
+                if label:
+                    return label
+        else:
+            return LabelService._get_speaker_label(user_label_dir, speaker, filename)
+        
+        return None
     
     @staticmethod
     def save_play_count(username, speaker, filename):
