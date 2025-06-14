@@ -151,9 +151,8 @@ def save_play_count():
         if not all([username, speaker, audio_file]):
             return jsonify({"error": "缺少必要参数"}), 400
         
-        # 这里可以实现播放计数的保存逻辑
-        # 暂时返回模拟数据
-        play_count = 1  # 实际应该从数据库或文件中获取并递增
+        # 使用标签服务保存播放次数
+        play_count = LabelService.save_play_count(username, speaker, audio_file)
         
         return jsonify({
             "success": True,
@@ -167,14 +166,14 @@ def save_play_count():
 def get_play_count(username, speaker, filename):
     """获取音频播放计数"""
     try:
-        # 这里应该实现从数据库或文件中获取播放计数的逻辑
-        # 暂时返回模拟数据
-        play_count = 0
+        # 使用标签服务获取播放次数
+        play_count = LabelService.get_play_count(username, speaker, filename)
         
         return jsonify({
             "success": True,
             "play_count": play_count
         })
+        
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500

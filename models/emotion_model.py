@@ -7,7 +7,7 @@ class EmotionLabel:
     
     def __init__(self, audio_file, v_value=None, a_value=None, emotion_type=None, 
                  discrete_emotion=None, username=None, patient_status=None, 
-                 audio_duration=0, va_complete=False, discrete_complete=False):
+                 audio_duration=0, va_complete=False, discrete_complete=False, play_count=0):
         self.audio_file = audio_file
         self.v_value = v_value
         self.a_value = a_value
@@ -17,6 +17,7 @@ class EmotionLabel:
         self.patient_status = patient_status
         self.audio_duration = audio_duration
         self.timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.play_count = play_count  # 播放次数
         
         # 这两个字段现在由下面的方法自动管理
         self.va_complete = va_complete
@@ -54,7 +55,6 @@ class EmotionLabel:
             self.discrete_complete = False
 
     def to_dict(self):
-        # ... (此方法无需修改)
         """转换为字典"""
         return {
             "audio_file": self.audio_file,
@@ -68,6 +68,7 @@ class EmotionLabel:
             "timestamp": self.timestamp,
             "va_complete": self.va_complete,
             "discrete_complete": self.discrete_complete,
+            "play_count": self.play_count,
         }
     
     @classmethod
@@ -85,6 +86,7 @@ class EmotionLabel:
             data.get("audio_duration", 0),
             # va_complete 和 discrete_complete 将由 update_completeness 自动计算，
             # 无需从字典中读取旧的状态，保证了状态的实时正确性。
+            play_count=data.get("play_count", 0),
         )
         if "timestamp" in data:
             label.timestamp = data["timestamp"]

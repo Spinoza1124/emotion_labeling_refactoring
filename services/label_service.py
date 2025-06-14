@@ -103,6 +103,86 @@ class LabelService:
         
         if not os.path.exists(user_label_dir):
             return None
+    
+    @staticmethod
+    def save_play_count(username, speaker, filename):
+        """保存音频播放次数"""
+        user_label_dir = os.path.join(Config.LABEL_FOLDER, username)
+        
+        if not os.path.exists(user_label_dir):
+            return 0
+        
+        # 处理分组说话人
+        if re.match(r'spk\d+$', speaker):
+            all_speakers = [
+                d for d in os.listdir(Config.AUDIO_FOLDER)
+                if os.path.isdir(os.path.join(Config.AUDIO_FOLDER, d)) 
+                and d.startswith(speaker + '-')
+            ]
+            
+            for sub_speaker in all_speakers:
+                count = LabelService._save_speaker_play_count(user_label_dir, sub_speaker, filename)
+                if count > 0:
+                    return count
+        else:
+            return LabelService._save_speaker_play_count(user_label_dir, speaker, filename)
+        
+        return 0
+    
+    @staticmethod
+    def _save_speaker_play_count(user_label_dir, speaker, filename):
+        """保存单个说话人的音频播放次数"""
+        label_path = os.path.join(user_label_dir, f"{speaker}_labels.json")
+        labels = safe_json_load(label_path, [])
+        
+        for label in labels:
+            if label.get("audio_file") == filename:
+                # 增加播放次数
+                current_count = label.get("play_count", 0)
+                label["play_count"] = current_count + 1
+                
+                # 保存更新后的数据
+                safe_json_save(label_path, labels)
+                return label["play_count"]
+        
+        return 0
+    
+    @staticmethod
+    def get_play_count(username, speaker, filename):
+        """获取音频播放次数"""
+        user_label_dir = os.path.join(Config.LABEL_FOLDER, username)
+        
+        if not os.path.exists(user_label_dir):
+            return 0
+        
+        # 处理分组说话人
+        if re.match(r'spk\d+$', speaker):
+            all_speakers = [
+                d for d in os.listdir(Config.AUDIO_FOLDER)
+                if os.path.isdir(os.path.join(Config.AUDIO_FOLDER, d)) 
+                and d.startswith(speaker + '-')
+            ]
+            
+            for sub_speaker in all_speakers:
+                count = LabelService._get_speaker_play_count(user_label_dir, sub_speaker, filename)
+                if count > 0:
+                    return count
+        else:
+            return LabelService._get_speaker_play_count(user_label_dir, speaker, filename)
+        
+        return 0
+    
+    @staticmethod
+    def _get_speaker_play_count(user_label_dir, speaker, filename):
+        """获取单个说话人的音频播放次数"""
+        label_path = os.path.join(user_label_dir, f"{speaker}_labels.json")
+        labels = safe_json_load(label_path, [])
+        
+        for label in labels:
+            if label.get("audio_file") == filename:
+                return label.get("play_count", 0)
+        
+        return 0
         
         # 处理分组说话人
         if re.match(r'spk\d+$', speaker):
