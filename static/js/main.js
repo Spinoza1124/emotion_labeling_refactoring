@@ -55,7 +55,6 @@ class EmotionLabelingApp {
             speakerSelect: document.getElementById('speaker-select'),
             audioListContainer: document.getElementById('audio-list-container'),
             audioPlayer: document.getElementById('audio-player'),
-            loopCheckbox: document.getElementById('loop-checkbox'),
             playCountValue: document.getElementById('play-count-value'),
             
             // 标注相关元素
@@ -114,11 +113,6 @@ class EmotionLabelingApp {
             this.userManager.logout();
         });
         
-        // 循环播放
-        elements.loopCheckbox.addEventListener('change', () => {
-            this.audioPlayer.setLoop(elements.loopCheckbox.checked);
-        });
-        
         // 音频选择回调
         this.audioListManager.setOnAudioSelectCallback((audioFile, index) => {
             this.handleAudioSelect(audioFile, index);
@@ -142,55 +136,124 @@ class EmotionLabelingApp {
         }
         
         // 加载音频
+        await this.loadAudioFile(audioFile, index); // 调用新的 loadAudioFile 方法
+        
+        this.keyboardHandler.resetFocus();
+    }
+
+    /**
+     * 加载音频文件并处理相关逻辑
+     * @param {object} audioFile - 音频文件对象
+     * @param {number} index - 音频文件在列表中的索引
+     */
+    async loadAudioFile(audioFile, index) {
+        if (!audioFile || !audioFile.path) {
+            console.error('Invalid audioFile object in loadAudioFile:', audioFile);
+            return;
+        }
+        console.log(`Loading audio file: ${audioFile.file_name}, Index: ${index}, Labeled: ${audioFile.labeled}, Path: ${audioFile.path}`);
+
+        this.currentAudioFile = audioFile; // 使用 this.currentAudioFile
+        this.currentAudioIndex = index;   // 使用 this.currentAudioIndex
+
+        if (!this.audioPlayer) {
+            console.error('audioPlayer is not initialized in loadAudioFile');
+            return;
+        }
+        if (!this.emotionAnnotator) {
+            console.error('emotionAnnotator is not initialized in loadAudioFile');
+            return;
+        }
+
         try {
+            // 注意：原始的 audioPlayer.loadAudio 接受三个参数，这里只传递了路径
+            // 需要确认 audioPlayer.loadAudio 的实现是否兼容仅路径的调用，或者调整参数
             await this.audioPlayer.loadAudio(
-                audioFile, 
+                audioFile, // 传递完整的 audioFile 对象
                 this.audioListManager.currentSpeaker, 
                 this.userManager.getCurrentUsername()
             );
-        } catch (error) {
-            console.error('加载音频失败:', error);
-        }
-        
-        // 重置标注并切换到VA模式
-        this.emotionAnnotator.reset();
-        this.emotionAnnotator.switchToVaMode();
-        
-        // 更新按钮状态
-        this.updateButtonStates();
-        
-        // 如果有已保存的标注，加载它
-        if (audioFile.labeled) {
-            try {
-                await this.emotionAnnotator.loadSavedLabel(
-                    this.userManager.getCurrentUsername(),
-                    this.audioListManager.currentSpeaker,
-                    audioFile.file_name
-                );
-                
-                // 使用音频文件中已保存的完整性状态，而不是重新计算
-                if (Array.isArray(audioFile.annotation_completeness) && !audioFile.annotation_completeness.includes('none')) {
-                    // 有标注数据，更新保存按钮状态
-                    this.updateSaveButtonStatus(true);
-                    // 不需要重新调用updateAudioLabelStatus，因为数据已经在audioFile中
-                } else {
-                    // 未标注的音频，重置保存按钮状态
+            this.emotionAnnotator.reset();
+            this.emotionAnnotator.switchToVaMode(); // 确保切换到VA模式
+            this.updateButtonStates(); // 更新按钮状态
+
+            if (audioFile.labeled) {
+                console.log(`File ${audioFile.file_name} is marked as labeled. Attempting to load saved label.`);
+                try {
+                    // 修复：添加缺失的 username 参数，正确调用数据库API
+                    const labelData = await DataService.getLabel(
+                        this.userManager.getCurrentUsername(),
+                        this.audioListManager.currentSpeaker, 
+                        audioFile.file_name
+                    ); 
+                    
+                    if (labelData && labelData.success && labelData.data) {
+                        console.log(`Successfully received label data for ${audioFile.file_name}:`, JSON.stringify(labelData.data));
+                        
+                        // 修复：直接使用数据库返回的数据更新UI，避免重复API调用
+                        const label = labelData.data;
+                        
+                        // 设置VA值
+                        if (label.v_value !== undefined && label.v_value !== null) {
+                            this.emotionAnnotator.elements.vSlider.value = label.v_value;
+                        }
+                        if (label.a_value !== undefined && label.a_value !== null) {
+                            this.emotionAnnotator.elements.aSlider.value = label.a_value;
+                        }
+                        this.emotionAnnotator.updateSliderDisplay();
+                        
+                        // 设置患者状态
+                        if (label.patient_status) {
+                            this.emotionAnnotator.patientStatus = label.patient_status;
+                            const patientRadio = document.getElementById(label.patient_status === 'patient' ? 'is-patient' : 'not-patient');
+                            if (patientRadio) patientRadio.checked = true;
+                        }
+                        
+                        // 设置情感类型
+                        if (label.emotion_type) {
+                            this.emotionAnnotator.emotionType = label.emotion_type;
+                            const emotionRadio = document.getElementById(label.emotion_type === 'neutral' ? 'neutral-type' : 'non-neutral-type');
+                            if (emotionRadio) emotionRadio.checked = true;
+                            
+                            this.emotionAnnotator.handleEmotionTypeChange();
+                            
+                            // 设置具体情感
+                            if (this.emotionAnnotator.emotionType === 'non-neutral' && label.discrete_emotion) {
+                                this.emotionAnnotator.selectedDiscreteEmotion = label.discrete_emotion;
+                                const discreteRadio = document.getElementById(`emotion-${label.discrete_emotion}`);
+                                if (discreteRadio) discreteRadio.checked = true;
+                            }
+                        }
+                        
+                        // 根据加载的标注数据更新保存按钮状态
+                        this.updateSaveButtonStatus(true);
+                    } else {
+                        console.warn(`dataService.getLabel returned no data for ${audioFile.file_name} (marked as labeled). UI remains reset.`);
+                        this.updateSaveButtonStatus(false);
+                    }
+                } catch (error) {
+                    console.error(`Error in dataService.getLabel for ${audioFile.file_name}:`, error);
                     this.updateSaveButtonStatus(false);
                 }
-                
-                // 更新保存按钮可见性
-                this.updateSaveButtonVisibility();
-            } catch (error) {
-                console.error('加载已保存标注失败:', error);
+            } else {
+                console.log(`File ${audioFile.file_name} is not marked as labeled. UI remains reset. Not calling dataService.getLabel.`);
+                this.updateSaveButtonStatus(false);
             }
-        } else {
-            // 未标注的音频，重置保存按钮状态
-            this.updateSaveButtonStatus(false);
-            // 更新保存按钮可见性
-            this.updateSaveButtonVisibility();
+            this.updateSaveButtonVisibility(); // 统一更新保存按钮可见性
+
+        } catch (error) {
+            console.error(`Error loading audio or processing labels for ${audioFile.file_name}:`, error);
         }
         
-        this.keyboardHandler.resetFocus();
+        // 更新播放次数显示，确保在音频加载和标签处理之后
+        // 原始逻辑中 getPlayCount 是在 audioPlayer.loadAudio 内部调用的，这里移到外部确保顺序
+        // 并且，dataService.getPlayCount 的调用移到了 audioPlayer.loadAudio 内部，这里不再重复调用
+
+        // 更新UI元素，例如当前音频文件显示
+        const currentAudioDisplay = document.getElementById('currentAudioFileDisplay'); 
+        if (currentAudioDisplay) {
+            currentAudioDisplay.textContent = audioFile.file_name;
+        }
     }
 
     /**

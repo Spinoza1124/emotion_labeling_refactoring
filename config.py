@@ -6,9 +6,9 @@ class Config:
         "AUDIO_FOLDER", 
         "/mnt/shareEEx/liuyang/code/emotion_labeling_refactoring/data/emotion_annotation"
     )
-    LABEL_FOLDER = os.getenv(
-        "LABEL_FOLDER", 
-        "/mnt/shareEEx/liuyang/code/emotion_labeling_refactoring/labels"
+    DATABASE_FOLDER = os.getenv(
+        "DATABASE_FOLDER", 
+        "/mnt/shareEEx/liuyang/code/emotion_labeling_refactoring/database"
     )
     TEST_AUDIO_FOLDER = os.getenv(
         "TEST_AUDIO_FOLDER",
@@ -24,5 +24,5 @@ class Config:
     # 确保必要目录存在
     @classmethod
     def init_directories(cls):
-        os.makedirs(cls.LABEL_FOLDER, exist_ok=True)
+        os.makedirs(cls.DATABASE_FOLDER, exist_ok=True)
         os.makedirs(cls.ORDER_LIST_FOLDER, exist_ok=True)

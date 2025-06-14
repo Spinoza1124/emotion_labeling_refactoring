@@ -7,7 +7,7 @@ class UserModel:
     
     def __init__(self):
         """初始化数据库连接"""
-        self.db_path = os.path.join(Config.LABEL_FOLDER, 'users.db')
+        self.db_path = os.path.join(Config.DATABASE_FOLDER, 'users.db')
         self.init_database()
     
     def init_database(self):

@@ -9,8 +9,8 @@ class UserService:
     @staticmethod
     def update_username(old_username, new_username):
         """更新用户名并移动文件"""
-        old_user_dir = os.path.join(Config.LABEL_FOLDER, old_username)
-        new_user_dir = os.path.join(Config.LABEL_FOLDER, new_username)
+        old_user_dir = os.path.join(Config.DATABASE_FOLDER, old_username)
+        new_user_dir = os.path.join(Config.DATABASE_FOLDER, new_username)
         
         if not os.path.exists(old_user_dir):
             return 0

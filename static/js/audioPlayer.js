@@ -45,31 +45,27 @@ class AudioPlayer {
         this.audioElement.src = audioFile.path;
         this.audioElement.load();
         
-        // 加载播放次数
-        this.loadPlayCount();
+        // 移除之前的播放结束事件监听器
+        this.audioElement.removeEventListener('ended', this.handleAudioEnded);
         
-        // 移除之前的播放事件监听器
-        this.audioElement.removeEventListener('play', this.handleAudioPlay);
-        
-        // 添加新的播放事件监听器
-        this.handleAudioPlay = () => {
+        // 添加播放结束事件监听器
+        this.handleAudioEnded = () => {
             this.incrementPlayCount();
         };
         
-        this.audioElement.addEventListener('play', this.handleAudioPlay);
+        this.audioElement.addEventListener('ended', this.handleAudioEnded);
         
-        return this.audioElement.play();
+        // 等待音频元数据加载完成后再加载播放次数
+        this.audioElement.addEventListener('loadedmetadata', () => {
+            this.loadPlayCount();
+        }, { once: true });
+        
+        // 不自动播放，让用户手动控制
+        return Promise.resolve();
     }
 
     /**
-     * 设置循环播放
-     */
-    setLoop(loop) {
-        this.audioElement.loop = loop;
-    }
-
-    /**
-     * 增加播放次数
+     * 增加播放次数（音频播放完成后调用）
      */
     incrementPlayCount() {
         if (!this.currentAudioFile || !this.currentSpeaker || !this.currentUsername) {
@@ -105,17 +101,36 @@ class AudioPlayer {
      * 加载播放次数
      */
     loadPlayCount() {
+        console.log('开始加载播放次数:', {
+            username: this.currentUsername,
+            speaker: this.currentSpeaker,
+            audioFile: this.currentAudioFile?.file_name
+        });
+        
         if (!this.currentUsername || !this.currentSpeaker || !this.currentAudioFile) {
+            console.log('缺少必要参数，设置播放次数为0');
             this.currentPlayCount = 0;
             this.updatePlayCountDisplay();
             return;
         }
         
-        fetch(`/api/get_play_count/${encodeURIComponent(this.currentUsername)}/${encodeURIComponent(this.currentSpeaker)}/${encodeURIComponent(this.currentAudioFile.file_name)}`)
-            .then(response => response.json())
+        const url = `/api/get_play_count/${encodeURIComponent(this.currentUsername)}/${encodeURIComponent(this.currentSpeaker)}/${encodeURIComponent(this.currentAudioFile.file_name)}`;
+        console.log('请求URL:', url);
+        
+        fetch(url)
+            .then(response => {
+                console.log('API响应状态:', response.status);
+                return response.json();
+            })
             .then(data => {
+                console.log('API响应数据:', data);
                 if (data.success) {
                     this.currentPlayCount = data.play_count || 0;
+                    console.log('设置播放次数为:', this.currentPlayCount);
+                    this.updatePlayCountDisplay();
+                } else {
+                    console.log('API返回失败，设置播放次数为0');
+                    this.currentPlayCount = 0;
                     this.updatePlayCountDisplay();
                 }
             })
@@ -130,8 +145,12 @@ class AudioPlayer {
      * 更新播放次数显示
      */
     updatePlayCountDisplay() {
+        console.log('更新播放次数显示:', this.currentPlayCount);
         if (this.playCountElement) {
             this.playCountElement.textContent = this.currentPlayCount;
+            console.log('播放次数元素已更新，当前文本:', this.playCountElement.textContent);
+        } else {
+            console.error('播放次数显示元素未找到');
         }
     }
 

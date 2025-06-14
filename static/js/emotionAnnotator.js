@@ -17,7 +17,7 @@ class EmotionAnnotator {
 
     initElements() {
         // 初始化滑动条默认值
-        this.elements.vSlider.min = 0;
+        this.elements.vSlider.min = -2;
         this.elements.vSlider.max = 2;
         this.elements.vSlider.step = 0.5;
         // 不设置默认值，让用户主动选择
@@ -133,12 +133,12 @@ class EmotionAnnotator {
                     if (label.v_value !== undefined && label.v_value !== null) {
                         this.elements.vSlider.value = label.v_value;
                     } else {
-                        this.elements.vSlider.value = '';
+                        this.elements.vSlider.value = ''; // 或者设置为一个合适的默认值，例如0
                     }
                     if (label.a_value !== undefined && label.a_value !== null) {
                         this.elements.aSlider.value = label.a_value;
                     } else {
-                        this.elements.aSlider.value = '';
+                        this.elements.aSlider.value = ''; // 或者设置为一个合适的默认值，例如3
                     }
                     this.updateSliderDisplay();
                     
@@ -148,10 +148,11 @@ class EmotionAnnotator {
                         const patientRadio = document.getElementById(label.patient_status === 'patient' ? 'is-patient' : 'not-patient');
                         if (patientRadio) patientRadio.checked = true;
                     } else {
-                        this.patientStatus = null;
-                        // 清除所有患者状态选择
+                        this.patientStatus = null; // 或者设置为默认值 'patient'
+                        // 清除所有患者状态选择或设置默认选中
                         const patientRadios = document.querySelectorAll('input[name="patient-status"]');
                         patientRadios.forEach(radio => radio.checked = false);
+                        // document.getElementById('is-patient').checked = true; // 可选：默认选中患者
                     }
                     
                     // 设置情感类型
@@ -160,29 +161,33 @@ class EmotionAnnotator {
                         const emotionRadio = document.getElementById(label.emotion_type === 'neutral' ? 'neutral-type' : 'non-neutral-type');
                         if (emotionRadio) emotionRadio.checked = true;
                         
-                        this.handleEmotionTypeChange();
+                        this.handleEmotionTypeChange(); // 确保在设置具体情感之前调用
                         
                         // 设置具体情感
-                        if (label.discrete_emotion && label.discrete_emotion !== null) {
+                        if (this.emotionType === 'non-neutral' && label.discrete_emotion && label.discrete_emotion !== null) {
                             this.selectedDiscreteEmotion = label.discrete_emotion;
                             const discreteRadio = document.getElementById(`emotion-${label.discrete_emotion}`);
                             if (discreteRadio) discreteRadio.checked = true;
                         } else {
                             this.selectedDiscreteEmotion = null;
+                             // 如果是中性，清除具体情感选择
+                            if (this.emotionType === 'neutral') {
+                                const discreteRadios = document.querySelectorAll('input[name="discrete-emotion"]');
+                                discreteRadios.forEach(radio => radio.checked = false);
+                            }
                         }
                     } else {
-                        this.emotionType = null;
+                        this.emotionType = 'neutral'; // 或者设置为默认值 'neutral'
                         this.selectedDiscreteEmotion = null;
-                        // 清除所有情感类型选择
+                        // 清除所有情感类型选择或设置默认选中
                         const emotionRadios = document.querySelectorAll('input[name="emotion-type"]');
                         emotionRadios.forEach(radio => radio.checked = false);
-                        // 清除所有具体情感选择
-                        const discreteRadios = document.querySelectorAll('input[name="discrete-emotion"]');
-                        discreteRadios.forEach(radio => radio.checked = false);
-                        this.handleEmotionTypeChange();
+                        document.getElementById('neutral-type').checked = true; // 可选：默认选中中性
+                        this.handleEmotionTypeChange(); // 更新UI
                     }
                     
                     this.setModified(false);
+                    console.log('Loaded label:', label); // 添加日志，确认加载的数据
                     return label;
                 }
             });
