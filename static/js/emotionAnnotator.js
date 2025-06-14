@@ -240,10 +240,10 @@ class EmotionAnnotator {
         this.elements.aSlider.value = '';
         this.updateSliderDisplay();
         
-        // 重置患者状态 - 清空选择
-        document.getElementById('is-patient').checked = false;
+        // 重置患者状态 - 默认选中患者
+        document.getElementById('is-patient').checked = true;
         document.getElementById('not-patient').checked = false;
-        this.patientStatus = null;
+        this.patientStatus = 'patient';
         
         // 重置情感类型 - 清空选择
         document.getElementById('neutral-type').checked = false;
