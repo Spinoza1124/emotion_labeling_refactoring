@@ -75,7 +75,8 @@ class EmotionLabelingApp {
             discreteEmotionRadios: document.querySelectorAll('input[name="discrete-emotion"]'),
             
             // 按钮元素
-            saveButton: document.getElementById('save-button'),
+            saveVaButton: document.getElementById('save-va-button'),
+            saveDiscreteButton: document.getElementById('save-discrete-button'),
             nextButton: document.getElementById('next-button'),
             continueButton: document.getElementById('continue-button'),
             backButton: document.getElementById('back-button'),
@@ -102,7 +103,7 @@ class EmotionLabelingApp {
             togglePlayPause: () => this.audioPlayer.togglePlayPause(),
             previous: () => this.handlePrevious(),
             next: () => this.handleNext(),
-            save: () => this.handleSave(),
+            save: () => this.handleSaveByMode(),
             continueOrBack: () => this.handleContinueOrBack()
         });
     }
@@ -124,7 +125,8 @@ class EmotionLabelingApp {
         });
         
         // 按钮事件
-        elements.saveButton.addEventListener('click', () => this.handleSave());
+        elements.saveVaButton.addEventListener('click', () => this.handleSaveVa());
+        elements.saveDiscreteButton.addEventListener('click', () => this.handleSaveDiscrete());
         elements.nextButton.addEventListener('click', () => this.handleNext());
         elements.continueButton.addEventListener('click', () => this.handleContinue());
         elements.backButton.addEventListener('click', () => this.handleBack());
@@ -165,16 +167,47 @@ class EmotionLabelingApp {
                     this.audioListManager.currentSpeaker,
                     audioFile.file_name
                 );
-                this.updateSaveButtonStatus(true);
+                
+                // 使用音频文件中已保存的完整性状态，而不是重新计算
+                if (Array.isArray(audioFile.annotation_completeness) && !audioFile.annotation_completeness.includes('none')) {
+                    // 有标注数据，更新保存按钮状态
+                    this.updateSaveButtonStatus(true);
+                    // 不需要重新调用updateAudioLabelStatus，因为数据已经在audioFile中
+                } else {
+                    // 未标注的音频，重置保存按钮状态
+                    this.updateSaveButtonStatus(false);
+                }
+                
+                // 更新保存按钮可见性
+                this.updateSaveButtonVisibility();
             } catch (error) {
                 console.error('加载已保存标注失败:', error);
             }
+        } else {
+            // 未标注的音频，重置保存按钮状态
+            this.updateSaveButtonStatus(false);
+            // 更新保存按钮可见性
+            this.updateSaveButtonVisibility();
         }
         
         this.keyboardHandler.resetFocus();
     }
 
-    async handleSave() {
+    /**
+     * 根据当前模式调用相应的保存方法
+     */
+    handleSaveByMode() {
+        if (this.emotionAnnotator.isVaLabelingMode) {
+            this.handleSaveVa();
+        } else {
+            this.handleSaveDiscrete();
+        }
+    }
+
+    /**
+     * 保存VA标注
+     */
+    async handleSaveVa() {
         const currentAudio = this.audioListManager.getCurrentAudio();
         if (!currentAudio) return;
         
@@ -186,7 +219,7 @@ class EmotionLabelingApp {
             ...annotation
         };
         
-        const saveButton = document.getElementById('save-button');
+        const saveButton = document.getElementById('save-va-button');
         saveButton.disabled = true;
         saveButton.textContent = '保存中...';
         
@@ -205,9 +238,52 @@ class EmotionLabelingApp {
                 throw new Error(result.error || '保存失败');
             }
         } catch (error) {
-            console.error('保存标注失败:', error);
-            alert('保存标注失败，请重试');
-            saveButton.textContent = '保存(W)';
+            console.error('保存VA标注失败:', error);
+            alert('保存VA标注失败，请重试');
+            saveButton.textContent = '保存VA(W)';
+            saveButton.disabled = false;
+        }
+        
+        this.keyboardHandler.resetFocus();
+    }
+
+    /**
+     * 保存离散情感标注
+     */
+    async handleSaveDiscrete() {
+        const currentAudio = this.audioListManager.getCurrentAudio();
+        if (!currentAudio) return;
+        
+        const annotation = this.emotionAnnotator.getCurrentAnnotation();
+        const labelData = {
+            speaker: this.audioListManager.currentSpeaker,
+            audio_file: currentAudio.file_name,
+            username: this.userManager.getCurrentUsername(),
+            ...annotation
+        };
+        
+        const saveButton = document.getElementById('save-discrete-button');
+        saveButton.disabled = true;
+        saveButton.textContent = '保存中...';
+        
+        try {
+            const result = await DataService.saveLabel(labelData);
+            if (result.success) {
+                const completeness = this.emotionAnnotator.getAnnotationCompleteness();
+                this.audioListManager.updateAudioLabelStatus(
+                    this.audioListManager.currentAudioIndex, 
+                    true, 
+                    completeness
+                );
+                this.emotionAnnotator.setModified(false);
+                this.updateSaveButtonStatus(true);
+            } else {
+                throw new Error(result.error || '保存失败');
+            }
+        } catch (error) {
+            console.error('保存离散情感标注失败:', error);
+            alert('保存离散情感标注失败，请重试');
+            saveButton.textContent = '保存离散(W)';
             saveButton.disabled = false;
         }
         
@@ -221,7 +297,30 @@ class EmotionLabelingApp {
             }
         }
         
-        this.audioListManager.nextAudio();
+        // 获取当前音频的已保存标注状态，而不是界面当前状态
+        const currentAudio = this.audioListManager.getCurrentAudio();
+        if (currentAudio && currentAudio.labeled && Array.isArray(currentAudio.annotation_completeness)) {
+            const hasDiscrete = currentAudio.annotation_completeness.includes('discrete_complete');
+            const hasVA = currentAudio.annotation_completeness.includes('va_complete');
+            
+            // 如果离散情感完整，或者VA都完整，则可以继续
+            if (hasDiscrete || hasVA) {
+                this.audioListManager.nextAudio();
+            } else {
+                alert('请完成当前音频的标注后再继续');
+            }
+        } else {
+            // 如果没有保存的标注，检查当前界面状态
+            const completeness = this.emotionAnnotator.getAnnotationCompleteness();
+            const hasDiscrete = completeness.includes('discrete_complete');
+            const hasVA = completeness.includes('va_complete');
+            
+            if (hasDiscrete || hasVA) {
+                this.audioListManager.nextAudio();
+            } else {
+                alert('请完成当前音频的标注后再继续');
+            }
+        }
         this.keyboardHandler.resetFocus();
     }
 
@@ -244,6 +343,7 @@ class EmotionLabelingApp {
         }
         
         this.emotionAnnotator.switchToDiscreteMode();
+        this.updateSaveButtonVisibility();
         this.keyboardHandler.resetFocus();
     }
 
@@ -255,6 +355,7 @@ class EmotionLabelingApp {
         }
         
         this.emotionAnnotator.switchToVaMode();
+        this.updateSaveButtonVisibility();
         this.keyboardHandler.resetFocus();
     }
 
@@ -273,31 +374,82 @@ class EmotionLabelingApp {
         document.getElementById('prev-button').disabled = currentIndex <= 0;
         document.getElementById('next-button').disabled = currentIndex >= audioList.length - 1;
         document.getElementById('continue-button').disabled = false;
-        document.getElementById('save-button').disabled = false;
+        document.getElementById('save-va-button').disabled = false;
+        document.getElementById('save-discrete-button').disabled = false;
     }
 
+    /**
+     * 更新保存按钮状态
+     * @param {boolean} isSaved - 是否已保存
+     */
     updateSaveButtonStatus(isSaved = false) {
-        const saveButton = document.getElementById('save-button');
-        saveButton.classList.remove('saved-va', 'saved-complete');
+        const saveVaButton = document.getElementById('save-va-button');
+        const saveDiscreteButton = document.getElementById('save-discrete-button');
+        
+        // 清除所有状态类
+        saveVaButton.classList.remove('saved');
+        saveDiscreteButton.classList.remove('saved');
         
         if (isSaved) {
             const completeness = this.emotionAnnotator.getAnnotationCompleteness();
             
-            if (completeness === 'complete') {
-                saveButton.textContent = '已保存(W)';
-                saveButton.classList.add('saved-complete');
-                saveButton.disabled = true;
-            } else if (completeness === 'va-only') {
-                saveButton.textContent = '已保存(W)';
-                saveButton.classList.add('saved-va');
-                saveButton.disabled = true;
+            // completeness现在总是返回数组
+            if (completeness.includes('none')) {
+                // 未标注
+                saveVaButton.textContent = '保存VA(W)';
+                saveVaButton.disabled = false;
+                saveDiscreteButton.textContent = '保存离散(W)';
+                saveDiscreteButton.disabled = false;
             } else {
-                saveButton.textContent = '保存(W)';
-                saveButton.disabled = false;
+                // 数组格式的完整性状态
+                const hasVA = completeness.includes('va_complete');
+                const hasDiscrete = completeness.includes('discrete_complete');
+                
+                // 更新VA保存按钮状态
+                if (hasVA) {
+                    saveVaButton.textContent = '已保存VA(W)';
+                    saveVaButton.classList.add('saved');
+                } else {
+                    saveVaButton.textContent = '保存VA(W)';
+                }
+                saveVaButton.disabled = false;
+                
+                // 更新离散情感保存按钮状态
+                if (hasDiscrete) {
+                    saveDiscreteButton.textContent = '已保存离散(W)';
+                    saveDiscreteButton.classList.add('saved');
+                } else {
+                    saveDiscreteButton.textContent = '保存离散(W)';
+                }
+                saveDiscreteButton.disabled = false;
             }
         } else {
-            saveButton.textContent = '保存(W)';
-            saveButton.disabled = false;
+            // 未保存状态
+            saveVaButton.textContent = '保存VA(W)';
+            saveVaButton.disabled = false;
+            saveDiscreteButton.textContent = '保存离散(W)';
+            saveDiscreteButton.disabled = false;
+        }
+        
+        // 根据当前模式显示/隐藏相应的保存按钮
+        this.updateSaveButtonVisibility();
+    }
+    
+    /**
+     * 根据当前标注模式更新保存按钮的可见性
+     */
+    updateSaveButtonVisibility() {
+        const saveVaButton = document.getElementById('save-va-button');
+        const saveDiscreteButton = document.getElementById('save-discrete-button');
+        
+        if (this.emotionAnnotator.isVaLabelingMode) {
+            // VA标注模式：显示VA保存按钮，隐藏离散情感保存按钮
+            saveVaButton.style.display = 'inline-block';
+            saveDiscreteButton.style.display = 'none';
+        } else {
+            // 离散情感标注模式：隐藏VA保存按钮，显示离散情感保存按钮
+            saveVaButton.style.display = 'none';
+            saveDiscreteButton.style.display = 'inline-block';
         }
     }
 }

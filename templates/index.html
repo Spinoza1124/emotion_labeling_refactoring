@@ -6,6 +6,17 @@
     <title>音频情感标注系统</title>
     <link rel="stylesheet" href="/static/css/style.css">
     
+    <!-- 背景图片样式 -->
+    <style>
+        body {
+            background-image: url('/static/images/village.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }
+    </style>
+    
     <!-- 登录状态检查脚本 -->
     <script>
         // 检查用户是否已登录
@@ -216,7 +227,8 @@
                 <div class="action-buttons">
                     <button id="continue-button" disabled>离散(Q)</button>
                     <button id="back-button" style="display: none;">VA(Q)</button>
-                    <button id="save-button" disabled>保存(W)</button>
+                    <button id="save-va-button" disabled>保存VA(W)</button>
+                    <button id="save-discrete-button" disabled style="display: none;">保存离散(W)</button>
                     <button id="prev-button" disabled>上一条(E)</button>
                     <button id="next-button" disabled>下一条(R)</button>
                 </div>

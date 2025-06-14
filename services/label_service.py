@@ -68,10 +68,10 @@ class LabelService:
             audio_file=label_data.get("audio_file"),
             v_value=label_data.get("v_value"),
             a_value=label_data.get("a_value"),
-            emotion_type=label_data.get("emotion_type", "non-neutral"),
+            emotion_type=label_data.get("emotion_type"),
             discrete_emotion=label_data.get("discrete_emotion"),
             username=label_data.get("username"),
-            patient_status=label_data.get("patient_status", "patient"),
+            patient_status=label_data.get("patient_status"),
             audio_duration=audio_duration
         )
         

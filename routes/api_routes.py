@@ -41,7 +41,7 @@ def get_audio_list(speaker):
                 "file_name": file_name,
                 "path": f"/api/audio/{speaker}/{file_name}",
                 "labeled": file_name in labeled_files,
-                "annotation_completeness": annotation_completeness.get(file_name, 'none'),
+                "annotation_completeness": annotation_completeness.get(file_name, ['none']),
             })
         
         return jsonify(result)
@@ -62,7 +62,7 @@ def get_audio_list_by_path(username, speaker):
                 "file_name": file_name,
                 "path": f"/api/audio/{speaker}/{file_name}",
                 "labeled": file_name in labeled_files,
-                "annotation_completeness": annotation_completeness.get(file_name, 'none'),
+                "annotation_completeness": annotation_completeness.get(file_name, ['none']),
             })
         
         return jsonify(result)

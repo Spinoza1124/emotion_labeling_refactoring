@@ -1,35 +1,28 @@
 [
   {
     "audio_file": "spk182-2-1-204.wav",
-    "v_value": 0,
-    "a_value": 3,
-    "emotion_type": "neutral",
-    "discrete_emotion": null,
+    "v_value": 1.5,
+    "a_value": 2,
+    "emotion_type": "non-neutral",
+    "discrete_emotion": "sad",
     "username": "zhangsan",
     "patient_status": "patient",
     "audio_duration": 3.985,
-    "timestamp": "2025-06-13 13:17:10"
+    "timestamp": "2025-06-14 06:13:48",
+    "va_complete": true,
+    "discrete_complete": true
   },
   {
     "audio_file": "spk182-2-1-182.wav",
-    "v_value": 0,
-    "a_value": 3,
-    "emotion_type": "neutral",
-    "discrete_emotion": null,
+    "v_value": 1.5,
+    "a_value": 2,
+    "emotion_type": "non-neutral",
+    "discrete_emotion": "angry",
     "username": "zhangsan",
     "patient_status": "patient",
     "audio_duration": 5.36,
-    "timestamp": "2025-06-13 14:17:10"
-  },
-  {
-    "audio_file": "spk182-2-1-9.wav",
-    "v_value": 0,
-    "a_value": 3,
-    "emotion_type": "neutral",
-    "discrete_emotion": null,
-    "username": "zhangsan",
-    "patient_status": "patient",
-    "audio_duration": 10.26,
-    "timestamp": "2025-06-13 14:20:55"
+    "timestamp": "2025-06-14 06:31:54",
+    "va_complete": true,
+    "discrete_complete": true
   }
 ]

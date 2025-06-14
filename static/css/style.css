@@ -134,6 +134,14 @@ h3 {
     font-weight: bold;
 }
 
+/* 已标注的音频项 - 离散情感完整标注（蓝色） */
+.audio-item.labeled-discrete {
+    color: #3498db;
+    font-weight: bold;
+}
+
+
+
 /* 保持向后兼容的通用已标注样式 */
 .audio-item.labeled {
     color: #2ecc71;
@@ -618,34 +626,47 @@ button {
     gap: 10px;
 }
 
-/* 保存按钮 */
-#save-button {
+/* VA保存按钮 */
+#save-va-button {
     background-color: #3498db;
     color: white;
 }
 
-#save-button:hover {
+#save-va-button:hover {
     background-color: #2980b9;
 }
 
-/* 保存按钮状态样式 */
-#save-button.saved-va {
-    background-color: #e74c3c; /* 红色 - 只保存了VA标注 */
+/* VA保存按钮已保存状态 */
+#save-va-button.saved {
+    background-color: #27ae60; /* 绿色 - 已保存VA标注 */
     color: white;
 }
 
-#save-button.saved-va:hover {
+#save-va-button.saved:hover {
+    background-color: #229954;
+}
+
+/* 离散情感保存按钮 */
+#save-discrete-button {
+    background-color: #e74c3c;
+    color: white;
+}
+
+#save-discrete-button:hover {
     background-color: #c0392b;
 }
 
-#save-button.saved-complete {
-    background-color: #27ae60; /* 绿色 - 保存了完整标注 */
+/* 离散情感保存按钮已保存状态 */
+#save-discrete-button.saved {
+    background-color: #27ae60; /* 绿色 - 已保存离散情感标注 */
     color: white;
 }
 
-#save-button.saved-complete:hover {
+#save-discrete-button.saved:hover {
     background-color: #229954;
 }
+
+
 
 /* 继续和下一条按钮 */
 #next-button, #continue-button {

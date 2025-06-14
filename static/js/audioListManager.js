@@ -87,14 +87,20 @@ class AudioListManager {
             const audioItem = document.createElement('div');
             audioItem.className = 'audio-item';
             
-            // 根据标注完整性设置样式类
-            const completeness = audio.annotation_completeness || 'none';
-            if (completeness === 'va-only') {
-                audioItem.classList.add('labeled-va');
-            } else if (completeness === 'complete') {
-                audioItem.classList.add('labeled-complete');
+            // 根据标注完整性添加样式类
+            // annotation_completeness现在总是数组格式
+            if (Array.isArray(audio.annotation_completeness)) {
+                const hasVA = audio.annotation_completeness.includes('va_complete');
+                const hasDiscrete = audio.annotation_completeness.includes('discrete_complete');
+                
+                if (hasDiscrete && hasVA) {
+                    // 有离散情感标注 - 绿色
+                    audioItem.classList.add('labeled-complete');
+                } else if (hasVA && !hasDiscrete) {
+                    // 只有VA标注，没有离散情感 - 红色
+                    audioItem.classList.add('labeled-va');
+                } 
             }
-            // 如果是 'none'，则不添加任何特殊样式类，保持默认颜色
             
             audioItem.innerHTML = `
                 <span class="audio-name">${audio.file_name}</span>
@@ -130,7 +136,7 @@ class AudioListManager {
     updateAudioSelection() {
         const audioItems = this.audioListContainer.querySelectorAll('.audio-item');
         audioItems.forEach((item, index) => {
-            item.classList.toggle('selected', index === this.currentAudioIndex);
+            item.classList.toggle('active', index === this.currentAudioIndex);
         });
     }
 
@@ -178,10 +184,14 @@ class AudioListManager {
 
     /**
      * 更新音频标注状态
+     * @param {number} index - 音频索引
+     * @param {boolean} labeled - 是否已标注
+     * @param {Array} completeness - 标注完整性数组
      */
-    updateAudioLabelStatus(index, labeled) {
+    updateAudioLabelStatus(index, labeled, completeness = []) {
         if (index >= 0 && index < this.audioList.length) {
             this.audioList[index].labeled = labeled;
+            this.audioList[index].annotation_completeness = completeness;
             this.renderAudioList();
             this.updateAudioSelection();
         }

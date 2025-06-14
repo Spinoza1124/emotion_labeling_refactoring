@@ -2,23 +2,14 @@
   {
     "audio_file": "spk182-5-1-210.wav",
     "v_value": 0,
-    "a_value": 3,
-    "emotion_type": "neutral",
-    "discrete_emotion": null,
+    "a_value": 4,
+    "emotion_type": "non-neutral",
+    "discrete_emotion": "fear",
     "username": "zhangsan",
-    "patient_status": "patient",
+    "patient_status": "non-patient",
     "audio_duration": 6.18,
-    "timestamp": "2025-06-13 14:17:13"
-  },
-  {
-    "audio_file": "spk182-5-1-103.wav",
-    "v_value": 0,
-    "a_value": 3,
-    "emotion_type": "neutral",
-    "discrete_emotion": null,
-    "username": "zhangsan",
-    "patient_status": "patient",
-    "audio_duration": 0.72,
-    "timestamp": "2025-06-13 14:20:45"
+    "timestamp": "2025-06-14 06:32:46",
+    "va_complete": true,
+    "discrete_complete": true
   }
 ]
