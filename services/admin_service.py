@@ -36,9 +36,9 @@ class AdminService:
             cursor.execute("SELECT COUNT(DISTINCT username) FROM emotion_labels")
             total_users = cursor.fetchone()[0]
             
-            # 总音频文件数
-            cursor.execute("SELECT COUNT(DISTINCT audio_file || '|' || speaker) FROM emotion_labels")
-            total_audio_files = cursor.fetchone()[0]
+            # 总音频文件数 - 直接统计emotion_annotation文件夹中的文件
+            from scripts.count_audio_files import update_audio_count_in_system
+            total_audio_files = update_audio_count_in_system(verbose=False)
             
             # 总标注数
             cursor.execute("SELECT COUNT(*) FROM emotion_labels")
