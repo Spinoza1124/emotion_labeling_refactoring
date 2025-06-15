@@ -522,6 +522,103 @@ body {
     background-color: #fff;
 }
 
+/* 详细一致性报告样式 */
+.detailed-report-content {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-top: 20px;
+}
+
+.detailed-report-content h4 {
+    color: #333;
+    margin-bottom: 15px;
+    font-size: 1.3rem;
+}
+
+.report-summary {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    border-left: 4px solid #007bff;
+}
+
+.report-summary p {
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+}
+
+.detailed-results h5 {
+    color: #495057;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+}
+
+.detailed-results-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+}
+
+.detailed-results-table th,
+.detailed-results-table td {
+    padding: 10px 8px;
+    text-align: left;
+    border: 1px solid #dee2e6;
+}
+
+.detailed-results-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.detailed-results-table tbody tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+.detailed-results-table tbody tr:hover {
+    background-color: #e9ecef;
+}
+
+.consistent-row {
+    background-color: #d4edda !important;
+}
+
+.inconsistent-row {
+    background-color: #f8d7da !important;
+}
+
+.consistent {
+    color: #155724;
+    font-weight: bold;
+}
+
+.inconsistent {
+    color: #721c24;
+    font-weight: bold;
+}
+
+.export-options {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #dee2e6;
+}
+
+.export-options .btn {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
     .admin-container {
@@ -566,6 +663,19 @@ body {
     .consistency-controls button {
         width: 100%;
         margin: 5px 0;
+    }
+    
+    .detailed-results-table {
+        font-size: 0.8rem;
+    }
+    
+    .detailed-results-table th,
+    .detailed-results-table td {
+        padding: 6px 4px;
+    }
+    
+    .export-options {
+        flex-direction: column;
     }
 }
 

@@ -185,14 +185,74 @@
         
         .completion-section {
             text-align: center;
-            padding: 40px 20px;
-            background-color: white;
-            border-radius: 10px;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
         .completion-section h2 {
-            color: #28a745;
+            color: #2c3e50;
             margin-bottom: 20px;
+            font-size: 2.2em;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .completion-section p {
+            color: #34495e;
+            font-size: 1.2em;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .completion-content {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .completion-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .completion-actions .btn-primary,
+        .completion-actions .btn-secondary {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            min-width: 140px;
+        }
+        
+        .completion-actions .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .completion-actions .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        .completion-actions .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(240, 147, 251, 0.4);
+        }
+        
+        .completion-actions .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(240, 147, 251, 0.6);
         }
         
         .hidden {
@@ -221,7 +281,6 @@
     <div class="consistency-container">
         <div class="consistency-header">
             <h1>一致性测试</h1>
-            <p>请根据音频内容进行情感标注，无需考虑正确率</p>
         </div>
         
         <!-- 用户名输入区域 -->
@@ -271,67 +330,41 @@
                     </div>
                 </div>
                 
-                <div class="form-group">
-                    <label>情感类型:</label>
-                    <div class="radio-group">
-                        <div class="radio-item">
-                            <input type="radio" id="neutral" name="emotionType" value="neutral">
-                            <label for="neutral">中性</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="nonNeutral" name="emotionType" value="non-neutral" checked>
-                            <label for="nonNeutral">非中性</label>
-                        </div>
-                    </div>
-                </div>
-                
+                <!-- 离散情感标注区域 -->
                 <div class="form-group">
                     <label>离散情感:</label>
-                    <div class="radio-group">
-                        <div class="radio-item">
-                            <input type="radio" id="happy" name="discreteEmotion" value="happy">
-                            <label for="happy">高兴</label>
+                    <div class="emotion-options" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
+                        <div class="emotion-option">
+                            <input type="radio" name="discreteEmotion" id="emotion-happy" value="happy">
+                            <label for="emotion-happy" style="margin-left: 5px;">快乐</label>
                         </div>
-                        <div class="radio-item">
-                            <input type="radio" id="sad" name="discreteEmotion" value="sad">
-                            <label for="sad">悲伤</label>
+                        <div class="emotion-option">
+                            <input type="radio" name="discreteEmotion" id="emotion-angry" value="angry">
+                            <label for="emotion-angry" style="margin-left: 5px;">愤怒</label>
                         </div>
-                        <div class="radio-item">
-                            <input type="radio" id="angry" name="discreteEmotion" value="angry">
-                            <label for="angry">愤怒</label>
+                        <div class="emotion-option">
+                            <input type="radio" name="discreteEmotion" id="emotion-sad" value="sad">
+                            <label for="emotion-sad" style="margin-left: 5px;">悲伤</label>
                         </div>
-                        <div class="radio-item">
-                            <input type="radio" id="fear" name="discreteEmotion" value="fear">
-                            <label for="fear">恐惧</label>
+                        <div class="emotion-option">
+                            <input type="radio" name="discreteEmotion" id="emotion-fear" value="fear">
+                            <label for="emotion-fear" style="margin-left: 5px;">恐惧</label>
                         </div>
-                        <div class="radio-item">
-                            <input type="radio" id="surprise" name="discreteEmotion" value="surprise">
-                            <label for="surprise">惊讶</label>
+                        <div class="emotion-option">
+                            <input type="radio" name="discreteEmotion" id="emotion-disgust" value="disgust">
+                            <label for="emotion-disgust" style="margin-left: 5px;">厌恶</label>
                         </div>
-                        <div class="radio-item">
-                            <input type="radio" id="disgust" name="discreteEmotion" value="disgust">
-                            <label for="disgust">厌恶</label>
+                        <div class="emotion-option">
+                            <input type="radio" name="discreteEmotion" id="emotion-surprise" value="surprise">
+                            <label for="emotion-surprise" style="margin-left: 5px;">惊讶</label>
                         </div>
-                        <div class="radio-item">
-                            <input type="radio" id="neutral_discrete" name="discreteEmotion" value="neutral">
-                            <label for="neutral_discrete">中性</label>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label>患者状态:</label>
-                    <div class="radio-group">
-                        <div class="radio-item">
-                            <input type="radio" id="patient" name="patientStatus" value="patient" checked>
-                            <label for="patient">患者</label>
-                        </div>
-                        <div class="radio-item">
-                            <input type="radio" id="normal" name="patientStatus" value="normal">
-                            <label for="normal">正常人</label>
+                        <div class="emotion-option">
+                            <input type="radio" name="discreteEmotion" id="emotion-neutral" value="neutral">
+                            <label for="emotion-neutral" style="margin-left: 5px;">中性</label>
                         </div>
                     </div>
                 </div>
+
             </div>
             
             <!-- 导航按钮 -->

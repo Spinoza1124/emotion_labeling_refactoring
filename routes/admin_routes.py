@@ -8,6 +8,8 @@ import os
 from flask import Blueprint, jsonify, request, render_template, session
 from services.admin_service import AdminService
 from services.user_service import UserService
+from models.admin_model import AdminModel
+from utils.logger import emotion_logger, get_client_ip
 from config import Config
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
@@ -26,6 +28,33 @@ def admin_required(f):
     def decorated_function(*args, **kwargs):
         if not session.get('is_admin'):
             return jsonify({"error": "需要管理员权限"}), 403
+        return f(*args, **kwargs)
+    decorated_function.__name__ = f.__name__
+    return decorated_function
+
+# 超级管理员认证装饰器
+def super_admin_required(f):
+    """
+    超级管理员权限验证装饰器
+    
+    Args:
+        f: 被装饰的函数
+        
+    Returns:
+        装饰后的函数
+    """
+    def decorated_function(*args, **kwargs):
+        if not session.get('is_admin'):
+            return jsonify({"error": "需要管理员权限"}), 403
+        
+        admin_username = session.get('admin_username')
+        if not admin_username:
+            return jsonify({"error": "管理员身份验证失败"}), 403
+        
+        admin_model = AdminModel()
+        if not admin_model.is_super_admin(admin_username):
+            return jsonify({"error": "需要超级管理员权限"}), 403
+        
         return f(*args, **kwargs)
     decorated_function.__name__ = f.__name__
     return decorated_function
@@ -52,16 +81,56 @@ def admin_login():
         data = request.get_json()
         username = data.get('username')
         password = data.get('password')
+        ip_address = get_client_ip()
         
-        # 简单的管理员验证（生产环境应使用更安全的方式）
-        if username == 'admin' and password == 'admin123':
+        if not username or not password:
+            emotion_logger.log_user_activity(
+                username=username or 'unknown',
+                action="管理员登录失败",
+                details={"reason": "用户名或密码为空"},
+                ip_address=ip_address
+            )
+            return jsonify({"success": False, "message": "用户名和密码不能为空"}), 400
+        
+        admin_model = AdminModel()
+        admin_info = admin_model.verify_admin(username, password)
+        
+        if admin_info:
             session['is_admin'] = True
             session['admin_username'] = username
-            return jsonify({"success": True, "message": "登录成功"})
+            session['admin_role'] = admin_info['role']
+            session['admin_id'] = admin_info['id']
+            
+            emotion_logger.log_user_activity(
+                username=username,
+                action="管理员登录成功",
+                details={
+                    "role": admin_info['role'],
+                    "admin_id": admin_info['id']
+                },
+                ip_address=ip_address
+            )
+            
+            return jsonify({
+                "success": True, 
+                "message": "登录成功",
+                "admin_info": {
+                    "username": admin_info['username'],
+                    "role": admin_info['role'],
+                    "description": admin_info['description']
+                }
+            })
         else:
+            emotion_logger.log_user_activity(
+                username=username,
+                action="管理员登录失败",
+                details={"reason": "用户名或密码错误"},
+                ip_address=ip_address
+            )
             return jsonify({"success": False, "message": "用户名或密码错误"}), 401
             
     except Exception as e:
+        emotion_logger.log_error(e, "管理员登录异常", username)
         return jsonify({"error": str(e)}), 500
 
 @admin_bp.route('/api/consistency/stats')
@@ -322,6 +391,210 @@ def calculate_user_consistency(username):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# 管理员管理相关路由
+@admin_bp.route('/api/admins', methods=['GET'])
+@admin_required
+def get_all_admins():
+    """
+    获取所有管理员列表
+    
+    Returns:
+        JSON响应，包含管理员列表
+    """
+    try:
+        admin_model = AdminModel()
+        admins = admin_model.get_all_admins()
+        
+        # 获取当前管理员信息
+        current_admin_username = session.get('admin_username')
+        current_admin = next((admin for admin in admins if admin['username'] == current_admin_username), None)
+        
+        emotion_logger.log_user_activity(
+            username=current_admin_username,
+            action="查看管理员列表",
+            details={"admin_count": len(admins)},
+            ip_address=get_client_ip()
+        )
+        
+        return jsonify({
+            "success": True, 
+            "admins": admins,
+            "current_admin": current_admin
+        })
+        
+    except Exception as e:
+        emotion_logger.log_error(e, "获取管理员列表异常", session.get('admin_username'))
+        return jsonify({"error": str(e)}), 500
+
+@admin_bp.route('/api/admins', methods=['POST'])
+@super_admin_required
+def create_admin():
+    """
+    创建新管理员（仅超级管理员可用）
+    
+    Returns:
+        JSON响应，包含创建结果
+    """
+    try:
+        data = request.get_json()
+        username = data.get('username')
+        password = data.get('password')
+        description = data.get('description', '')
+        
+        if not username or not password:
+            return jsonify({"success": False, "message": "用户名和密码不能为空"}), 400
+        
+        admin_model = AdminModel()
+        # 新创建的管理员默认为普通管理员角色
+        role = AdminModel.ROLE_ADMIN
+        created_by = session.get('admin_username')
+        success = admin_model.create_admin(username, password, role, created_by, description)
+        
+        if success:
+            emotion_logger.log_user_activity(
+                username=session.get('admin_username'),
+                action="创建新管理员",
+                details={
+                    "new_admin_username": username,
+                    "description": description
+                },
+                ip_address=get_client_ip()
+            )
+            return jsonify({"success": True, "message": "管理员创建成功"})
+        else:
+            return jsonify({"success": False, "message": "管理员用户名已存在"}), 409
+            
+    except Exception as e:
+        emotion_logger.log_error(e, "创建管理员异常", session.get('admin_username'))
+        return jsonify({"error": str(e)}), 500
+
+@admin_bp.route('/api/admins/<int:admin_id>', methods=['PUT'])
+@super_admin_required
+def update_admin_status(admin_id):
+    """
+    更新管理员状态（仅超级管理员可用）
+    
+    Args:
+        admin_id: 管理员ID
+        
+    Returns:
+        JSON响应，包含更新结果
+    """
+    try:
+        data = request.get_json()
+        is_active = data.get('is_active')
+        
+        if is_active is None:
+            return jsonify({"success": False, "message": "缺少is_active参数"}), 400
+        
+        admin_model = AdminModel()
+        success = admin_model.update_admin_status(admin_id, is_active)
+        
+        if success:
+            emotion_logger.log_user_activity(
+                username=session.get('admin_username'),
+                action="更新管理员状态",
+                details={
+                    "admin_id": admin_id,
+                    "new_status": "激活" if is_active else "禁用"
+                },
+                ip_address=get_client_ip()
+            )
+            return jsonify({"success": True, "message": "管理员状态更新成功"})
+        else:
+            return jsonify({"success": False, "message": "管理员不存在或更新失败"}), 404
+            
+    except Exception as e:
+        emotion_logger.log_error(e, "更新管理员状态异常", session.get('admin_username'))
+        return jsonify({"error": str(e)}), 500
+
+@admin_bp.route('/api/admins/<int:admin_id>', methods=['DELETE'])
+@super_admin_required
+def delete_admin(admin_id):
+    """
+    删除管理员（仅超级管理员可用）
+    
+    Args:
+        admin_id: 管理员ID
+        
+    Returns:
+        JSON响应，包含删除结果
+    """
+    try:
+        admin_model = AdminModel()
+        
+        # 获取要删除的管理员信息
+        admins = admin_model.get_all_admins()
+        target_admin = next((admin for admin in admins if admin['id'] == admin_id), None)
+        
+        if not target_admin:
+            return jsonify({"success": False, "message": "管理员不存在"}), 404
+        
+        # 不能删除超级管理员
+        if target_admin['role'] == 'super_admin':
+            return jsonify({"success": False, "message": "不能删除超级管理员"}), 403
+        
+        success = admin_model.delete_admin(admin_id)
+        
+        if success:
+            emotion_logger.log_user_activity(
+                username=session.get('admin_username'),
+                action="删除管理员",
+                details={
+                    "deleted_admin_id": admin_id,
+                    "deleted_admin_username": target_admin['username']
+                },
+                ip_address=get_client_ip()
+            )
+            return jsonify({"success": True, "message": "管理员删除成功"})
+        else:
+            return jsonify({"success": False, "message": "删除失败"}), 500
+            
+    except Exception as e:
+        emotion_logger.log_error(e, "删除管理员异常", session.get('admin_username'))
+        return jsonify({"error": str(e)}), 500
+
+@admin_bp.route('/api/admins/change-password', methods=['POST'])
+@admin_required
+def change_admin_password():
+    """
+    修改管理员密码
+    
+    Returns:
+        JSON响应，包含修改结果
+    """
+    try:
+        data = request.get_json()
+        old_password = data.get('old_password')
+        new_password = data.get('new_password')
+        
+        if not old_password or not new_password:
+            return jsonify({"success": False, "message": "旧密码和新密码不能为空"}), 400
+        
+        admin_username = session.get('admin_username')
+        admin_model = AdminModel()
+        
+        # 验证旧密码
+        if not admin_model.verify_admin(admin_username, old_password):
+            return jsonify({"success": False, "message": "旧密码错误"}), 401
+        
+        success = admin_model.change_password(admin_username, new_password)
+        
+        if success:
+            emotion_logger.log_user_activity(
+                username=admin_username,
+                action="修改管理员密码",
+                details={"result": "成功"},
+                ip_address=get_client_ip()
+            )
+            return jsonify({"success": True, "message": "密码修改成功"})
+        else:
+            return jsonify({"success": False, "message": "密码修改失败"}), 500
+            
+    except Exception as e:
+        emotion_logger.log_error(e, "修改管理员密码异常", session.get('admin_username'))
+        return jsonify({"error": str(e)}), 500
+
 @admin_bp.route('/logout', methods=['POST'])
 @admin_required
 def admin_logout():
@@ -331,9 +604,51 @@ def admin_logout():
     Returns:
         JSON响应，包含登出结果
     """
-    session.pop('is_admin', None)
-    session.pop('admin_username', None)
-    return jsonify({"success": True, "message": "登出成功"})
+    try:
+        admin_username = session.get('admin_username')
+        admin_role = session.get('admin_role')
+        
+        emotion_logger.log_user_activity(
+            username=admin_username,
+            action="管理员登出",
+            details={
+                "result": "成功",
+                "role": admin_role,
+                "session_keys": list(session.keys())
+            },
+            ip_address=get_client_ip()
+        )
+        
+        # 清除会话
+        session.pop('is_admin', None)
+        session.pop('admin_username', None)
+        session.pop('admin_role', None)
+        session.pop('admin_id', None)
+        
+        # 确保会话被完全清除
+        session.clear()
+        
+        return jsonify({
+            "success": True, 
+            "message": "登出成功",
+            "redirect": "/admin/login"
+        })
+        
+    except Exception as e:
+        error_msg = str(e)
+        emotion_logger.log_error(e, "管理员登出异常", session.get('admin_username'))
+        
+        # 即使出现异常，也尝试清除会话
+        try:
+            session.clear()
+        except:
+            pass
+            
+        return jsonify({
+            "error": error_msg,
+            "message": "登出过程中出现错误，但会话已清除",
+            "redirect": "/admin/login"
+        }), 500
 
 @admin_bp.route('/dashboard')
 @admin_required

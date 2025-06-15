@@ -283,6 +283,28 @@ def get_user_test_settings():
     except Exception as e:
         return jsonify({'success': False, 'message': f'获取用户设置失败: {str(e)}'}), 500
 
+@api_bp.route('/user/test-settings/<username>', methods=['GET'])
+def get_user_test_settings_by_username(username):
+    """通过用户名获取用户的测试设置"""
+    try:
+        if not username:
+            return jsonify({'success': False, 'message': '用户名不能为空'}), 400
+        
+        # 获取用户测试设置
+        settings = UserModel().get_user_test_settings(username)
+        
+        if settings is None:
+            return jsonify({'success': False, 'message': '用户不存在'}), 404
+        
+        return jsonify({
+            'success': True,
+            'skip_test': settings.get('skip_test', False),
+            'skip_consistency_test': settings.get('skip_consistency_test', False)
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'获取用户设置失败: {str(e)}'}), 500
+
 @api_bp.route('/user/session-status', methods=['GET'])
 def get_session_status():
     """检查用户会话状态"""

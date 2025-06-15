@@ -36,6 +36,10 @@ class AdminDashboard {
             this.loadUsersData();
         });
 
+        document.getElementById('refresh-admins')?.addEventListener('click', () => {
+            this.loadAdminsData();
+        });
+
         document.getElementById('refresh-test-settings')?.addEventListener('click', () => {
             this.loadTestSettingsData();
         });
@@ -48,6 +52,26 @@ class AdminDashboard {
             this.loadSystemStatus();
         });
 
+        // 管理员管理按钮
+        document.getElementById('create-admin-btn')?.addEventListener('click', () => {
+            this.showCreateAdminModal();
+        });
+
+        document.getElementById('change-password-btn')?.addEventListener('click', () => {
+            this.showChangePasswordModal();
+        });
+
+        // 管理员表单提交
+        document.getElementById('create-admin-form')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.createAdmin();
+        });
+
+        document.getElementById('change-password-form')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.changePassword();
+        });
+
         // 导出按钮
         document.getElementById('export-btn')?.addEventListener('click', () => {
             this.exportData();
@@ -58,12 +82,16 @@ class AdminDashboard {
         });
 
         // 一致性分析按钮
-        document.getElementById('calculate-consistency-btn')?.addEventListener('click', () => {
+        document.getElementById('calculate-consistency')?.addEventListener('click', () => {
             this.calculateConsistency();
         });
 
-        document.getElementById('export-consistency-btn')?.addEventListener('click', () => {
+        document.getElementById('export-consistency-data')?.addEventListener('click', () => {
             this.exportConsistencyReport();
+        });
+
+        document.getElementById('generate-consistency-report')?.addEventListener('click', () => {
+            this.generateDetailedConsistencyReport();
         });
 
         // 模态框关闭
@@ -129,6 +157,9 @@ class AdminDashboard {
                 break;
             case 'users':
                 this.loadUsersData();
+                break;
+            case 'admins':
+                this.loadAdminsData();
                 break;
             case 'test-settings':
                 this.loadTestSettingsData();
@@ -740,12 +771,39 @@ class AdminDashboard {
      */
     async logout() {
         try {
-            const response = await fetch('/admin/logout', { method: 'POST' });
+            console.log('开始执行登出操作');
+            const response = await fetch('/admin/logout', { 
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'same-origin'
+            });
+            
+            console.log('登出响应状态:', response.status);
+            
             if (response.ok) {
+                const data = await response.json();
+                console.log('登出响应数据:', data);
+                // 清除本地存储的管理员信息
+                sessionStorage.clear();
+                localStorage.clear();
+                // 跳转到登录页面
                 window.location.href = '/admin/login';
+            } else {
+                const errorData = await response.json();
+                console.error('登出失败:', errorData);
+                this.showError('登出失败: ' + (errorData.error || errorData.message || '未知错误'));
             }
         } catch (error) {
-            this.showError('登出失败: ' + error.message);
+            console.error('登出异常:', error);
+            // 即使出现网络错误，也尝试清除本地数据并跳转
+            sessionStorage.clear();
+            localStorage.clear();
+            this.showError('网络错误，正在跳转到登录页面...');
+            setTimeout(() => {
+                window.location.href = '/admin/login';
+            }, 1000);
         }
     }
 
@@ -859,7 +917,7 @@ class AdminDashboard {
      * @param {Object} data - 一致性数据
      */
     displayConsistencyReport(data) {
-        const reportDiv = document.getElementById('consistency-report');
+        const reportDiv = document.getElementById('consistency-results');
         
         reportDiv.innerHTML = `
             <h4>用户 ${data.username} 的一致性分析报告</h4>
@@ -957,8 +1015,175 @@ class AdminDashboard {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        URL.revokeObjectURL(url);
         
         this.showSuccess('一致性报告已导出');
+    }
+
+    /**
+     * 生成详细一致性报告
+     */
+    generateDetailedConsistencyReport() {
+        if (!this.currentConsistencyData) {
+            this.showError('请先计算一致性分析');
+            return;
+        }
+
+        const data = this.currentConsistencyData;
+        const reportDiv = document.getElementById('detailed-consistency-report');
+        
+        let reportHtml = `
+            <div class="detailed-report-content">
+                <h4>用户 ${data.username} 的详细一致性报告</h4>
+                <div class="report-summary">
+                    <p><strong>报告生成时间:</strong> ${new Date().toLocaleString()}</p>
+                    <p><strong>总样本数:</strong> ${data.total_samples}</p>
+                    <p><strong>总体一致性:</strong> ${data.overall_consistency.toFixed(2)}%</p>
+                </div>
+                
+                <div class="detailed-results">
+                    <h5>详细结果列表</h5>
+                    <table class="detailed-results-table">
+                        <thead>
+                            <tr>
+                                <th>音频文件</th>
+                                <th>V值一致</th>
+                                <th>A值一致</th>
+                                <th>情感类型一致</th>
+                                <th>离散情感一致</th>
+                                <th>患者状态一致</th>
+                                <th>用户标注</th>
+                                <th>标准答案</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+        `;
+        
+        data.detailed_results.forEach(result => {
+            reportHtml += `
+                <tr class="${result.v_consistent && result.a_consistent && result.emotion_type_consistent && result.discrete_consistent && result.patient_consistent ? 'consistent-row' : 'inconsistent-row'}">
+                    <td>${result.audio_file}</td>
+                    <td class="${result.v_consistent ? 'consistent' : 'inconsistent'}">${result.v_consistent ? '✓' : '✗'}</td>
+                    <td class="${result.a_consistent ? 'consistent' : 'inconsistent'}">${result.a_consistent ? '✓' : '✗'}</td>
+                    <td class="${result.emotion_type_consistent ? 'consistent' : 'inconsistent'}">${result.emotion_type_consistent ? '✓' : '✗'}</td>
+                    <td class="${result.discrete_consistent ? 'consistent' : 'inconsistent'}">${result.discrete_consistent ? '✓' : '✗'}</td>
+                    <td class="${result.patient_consistent ? 'consistent' : 'inconsistent'}">${result.patient_consistent ? '✓' : '✗'}</td>
+                    <td>
+                        V: ${result.user_values.v_value || 'N/A'}<br>
+                        A: ${result.user_values.a_value || 'N/A'}<br>
+                        情感: ${result.user_values.emotion_type || 'N/A'}<br>
+                        离散: ${result.user_values.discrete_emotion || 'N/A'}<br>
+                        状态: ${result.user_values.patient_status || 'N/A'}
+                    </td>
+                    <td>
+                        V: ${result.standard_values.v_value || 'N/A'}<br>
+                        A: ${result.standard_values.a_value || 'N/A'}<br>
+                        情感: ${result.standard_values.emotion_type || 'N/A'}<br>
+                        离散: ${result.standard_values.discrete_emotion || 'N/A'}<br>
+                        状态: ${result.standard_values.patient_status || 'N/A'}
+                    </td>
+                </tr>
+            `;
+        });
+        
+        reportHtml += `
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="export-options">
+                    <button class="btn btn-primary" onclick="adminDashboard.exportConsistencyAsCSV()">导出为CSV</button>
+                    <button class="btn btn-primary" onclick="adminDashboard.exportConsistencyAsJSON()">导出为JSON</button>
+                </div>
+            </div>
+        `;
+        
+        reportDiv.innerHTML = reportHtml;
+        reportDiv.style.display = 'block';
+        
+        this.showSuccess('详细报告已生成');
+    }
+
+    /**
+     * 导出一致性数据为CSV格式
+     */
+    exportConsistencyAsCSV() {
+        if (!this.currentConsistencyData) {
+            this.showError('请先计算一致性分析');
+            return;
+        }
+        
+        const data = this.currentConsistencyData;
+        let csvContent = "音频文件,V值一致,A值一致,情感类型一致,离散情感一致,患者状态一致,用户V值,用户A值,用户情感类型,用户离散情感,用户患者状态,标准V值,标准A值,标准情感类型,标准离散情感,标准患者状态\n";
+        
+        data.detailed_results.forEach(result => {
+            csvContent += [
+                result.audio_file,
+                result.v_consistent ? '是' : '否',
+                result.a_consistent ? '是' : '否',
+                result.emotion_type_consistent ? '是' : '否',
+                result.discrete_consistent ? '是' : '否',
+                result.patient_consistent ? '是' : '否',
+                result.user_values.v_value || '',
+                result.user_values.a_value || '',
+                result.user_values.emotion_type || '',
+                result.user_values.discrete_emotion || '',
+                result.user_values.patient_status || '',
+                result.standard_values.v_value || '',
+                result.standard_values.a_value || '',
+                result.standard_values.emotion_type || '',
+                result.standard_values.discrete_emotion || '',
+                result.standard_values.patient_status || ''
+            ].join(',') + '\n';
+        });
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `consistency_report_${data.username}_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        this.showSuccess('CSV报告已导出');
+    }
+
+    /**
+     * 导出一致性数据为JSON格式
+     */
+    exportConsistencyAsJSON() {
+        if (!this.currentConsistencyData) {
+            this.showError('请先计算一致性分析');
+            return;
+        }
+        
+        const data = this.currentConsistencyData;
+        const exportData = {
+            username: data.username,
+            export_time: new Date().toISOString(),
+            total_samples: data.total_samples,
+            overall_consistency: data.overall_consistency,
+            consistency_scores: data.consistency_scores,
+            consistency_percentages: data.consistency_percentages,
+            detailed_results: data.detailed_results
+        };
+        
+        const jsonContent = JSON.stringify(exportData, null, 2);
+        const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `consistency_report_${data.username}_${new Date().toISOString().split('T')[0]}.json`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        this.showSuccess('JSON报告已导出');
     }
 
     /**
@@ -1089,6 +1314,246 @@ class AdminDashboard {
             this.showError('网络错误: ' + error.message);
         }
     }
+
+    /**
+     * 加载管理员数据
+     */
+    async loadAdminsData() {
+        console.log('loadAdminsData called');
+        try {
+            const response = await fetch('/admin/api/admins');
+            console.log('API response status:', response.status);
+            const data = await response.json();
+            console.log('API response data:', data);
+
+            if (response.ok) {
+                this.updateAdminsTable(data.admins);
+                this.updateAdminPermissions(data.current_admin);
+            } else {
+                console.error('API error:', data.error);
+                this.showError('加载管理员数据失败: ' + data.error);
+            }
+        } catch (error) {
+            console.error('Network error:', error);
+            this.showError('网络错误: ' + error.message);
+        }
+    }
+
+    /**
+     * 更新管理员表格
+     * @param {Array} admins - 管理员列表
+     */
+    updateAdminsTable(admins) {
+        const tbody = document.querySelector('#admins-table tbody');
+        tbody.innerHTML = '';
+
+        admins.forEach(admin => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${admin.id}</td>
+                <td>${admin.username}</td>
+                <td>
+                    <span class="role-badge ${admin.role}">
+                        ${admin.role === 'super_admin' ? '超级管理员' : '普通管理员'}
+                    </span>
+                </td>
+                <td>${admin.description || '-'}</td>
+                <td>
+                    <span class="status-badge ${admin.is_active ? 'active' : 'inactive'}">
+                        ${admin.is_active ? '激活' : '禁用'}
+                    </span>
+                </td>
+                <td>${new Date(admin.created_at).toLocaleString()}</td>
+                <td>
+                    ${admin.role !== 'super_admin' ? `
+                        <button class="btn btn-sm btn-warning" onclick="adminDashboard.toggleAdminStatus(${admin.id}, ${!admin.is_active})">
+                            ${admin.is_active ? '禁用' : '激活'}
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="adminDashboard.deleteAdmin(${admin.id}, '${admin.username}')">
+                            删除
+                        </button>
+                    ` : '<span class="text-muted">-</span>'}
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    /**
+     * 更新管理员权限显示
+     * @param {Object} currentAdmin - 当前管理员信息
+     */
+    updateAdminPermissions(currentAdmin) {
+        console.log('updateAdminPermissions called with:', currentAdmin);
+        const createBtn = document.getElementById('create-admin-btn');
+        if (!createBtn) {
+            console.error('create-admin-btn element not found');
+            return;
+        }
+        
+        if (currentAdmin && currentAdmin.role === 'super_admin') {
+            console.log('Showing create admin button for super admin');
+            createBtn.style.display = 'inline-block';
+        } else {
+            console.log('Hiding create admin button, role:', currentAdmin ? currentAdmin.role : 'no admin data');
+            createBtn.style.display = 'none';
+        }
+    }
+
+    /**
+     * 显示创建管理员模态框
+     */
+    showCreateAdminModal() {
+        document.getElementById('create-admin-modal').style.display = 'block';
+        document.getElementById('create-admin-form').reset();
+    }
+
+    /**
+     * 创建管理员
+     */
+    async createAdmin() {
+        const form = document.getElementById('create-admin-form');
+        const formData = new FormData(form);
+        
+        const adminData = {
+            username: formData.get('username'),
+            password: formData.get('password'),
+            description: formData.get('description')
+        };
+
+        try {
+            const response = await fetch('/admin/api/admins', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(adminData)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                this.showSuccess(data.message);
+                document.getElementById('create-admin-modal').style.display = 'none';
+                this.loadAdminsData();
+            } else {
+                this.showError('创建失败: ' + data.message);
+            }
+        } catch (error) {
+            this.showError('网络错误: ' + error.message);
+        }
+    }
+
+    /**
+     * 显示修改密码模态框
+     */
+    showChangePasswordModal() {
+        document.getElementById('change-password-modal').style.display = 'block';
+        document.getElementById('change-password-form').reset();
+    }
+
+    /**
+     * 修改管理员密码
+     */
+    async changePassword() {
+        const form = document.getElementById('change-password-form');
+        const formData = new FormData(form);
+        
+        const newPassword = formData.get('new_password');
+        const confirmPassword = formData.get('confirm_password');
+        
+        if (newPassword !== confirmPassword) {
+            this.showError('新密码和确认密码不匹配');
+            return;
+        }
+
+        const passwordData = {
+            old_password: formData.get('old_password'),
+            new_password: newPassword
+        };
+
+        try {
+            const response = await fetch('/admin/api/admins/change-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(passwordData)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                this.showSuccess(data.message);
+                document.getElementById('change-password-modal').style.display = 'none';
+            } else {
+                this.showError('修改失败: ' + data.message);
+            }
+        } catch (error) {
+            this.showError('网络错误: ' + error.message);
+        }
+    }
+
+    /**
+     * 切换管理员状态
+     * @param {number} adminId - 管理员ID
+     * @param {boolean} isActive - 新状态
+     */
+    async toggleAdminStatus(adminId, isActive) {
+        try {
+            const response = await fetch(`/admin/api/admins/${adminId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ is_active: isActive })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                this.showSuccess(data.message);
+                this.loadAdminsData();
+            } else {
+                this.showError('更新失败: ' + data.message);
+            }
+        } catch (error) {
+            this.showError('网络错误: ' + error.message);
+        }
+    }
+
+    /**
+     * 删除管理员
+     * @param {number} adminId - 管理员ID
+     * @param {string} username - 管理员用户名
+     */
+    async deleteAdmin(adminId, username) {
+        if (!confirm(`确定要删除管理员 "${username}" 吗？此操作不可撤销。`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/admin/api/admins/${adminId}`, {
+                method: 'DELETE'
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                this.showSuccess(data.message);
+                this.loadAdminsData();
+            } else {
+                this.showError('删除失败: ' + data.message);
+            }
+        } catch (error) {
+            this.showError('网络错误: ' + error.message);
+        }
+    }
+}
+
+// 全局函数，用于模态框关闭
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
 }
 
 // 初始化管理员仪表板

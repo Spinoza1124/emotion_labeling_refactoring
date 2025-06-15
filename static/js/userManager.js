@@ -66,7 +66,7 @@ class UserManager {
                     window.location.href = '/test?username=' + encodeURIComponent(username);
                 } else if (!data.skip_consistency_test) {
                     console.log('重定向到一致性测试页面');
-                    window.location.href = '/consistency_test?username=' + encodeURIComponent(username);
+                    window.location.href = '/consistency-test?username=' + encodeURIComponent(username);
                 } else {
                     console.log('重定向到主页面');
                     window.location.href = '/main?username=' + encodeURIComponent(username) + '&keep_login=true';
@@ -88,6 +88,9 @@ class UserManager {
      */
     logout() {
         if(confirm('确定要退出登录吗？')) {
+            // 清除localStorage中的用户名
+            localStorage.removeItem('emotion_labeling_username');
+            
             // 直接重定向到服务器端的退出登录路由
             // 服务器会清除会话和Cookie
             window.location.href = '/logout';

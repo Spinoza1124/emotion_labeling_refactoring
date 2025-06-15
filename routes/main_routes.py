@@ -68,7 +68,7 @@ def login():
         if not test_settings.get('skip_test', False):
             return redirect(url_for('main.test_page'))
         elif not test_settings.get('skip_consistency_test', False):
-            return redirect('/consistency_test')
+            return redirect('/consistency-test')
         else:
             return redirect(url_for('main.main_page'))
     else:
@@ -99,7 +99,7 @@ def login():
             if not test_settings.get('skip_test', False):
                 return redirect(url_for('main.test_page'))
             elif not test_settings.get('skip_consistency_test', False):
-                return redirect('/consistency_test') # 注意：这里可能需要调整为 url_for('main.consistency_test_page') 或类似路由
+                return redirect('/consistency-test')
             else:
                 return redirect(url_for('main.main_page'))
         else:

@@ -10,23 +10,62 @@ document.addEventListener('DOMContentLoaded', function() {
     checkUrlUsername();
 });
 
-// 检查URL参数中的用户名
+/**
+ * 检查URL参数中的用户名并验证一致性测试完成状态
+ */
 function checkUrlUsername() {
     const urlParams = new URLSearchParams(window.location.search);
     const urlUsername = urlParams.get('username');
     
     if (urlUsername) {
-        // 如果URL中有用户名，直接使用并开始测试
         username = urlUsername;
         document.getElementById('usernameInput').value = username;
         
-        // 直接跳过用户名输入，开始测试
-        document.getElementById('usernameSection').classList.add('hidden');
-        document.getElementById('testSection').classList.remove('hidden');
-        
-        // 加载测试题目
-        loadConsistencyQuestions();
+        // 检查用户是否已完成一致性测试
+        checkConsistencyTestStatus(username);
     }
+}
+
+/**
+ * 检查用户一致性测试完成状态
+ * @param {string} username - 用户名
+ */
+function checkConsistencyTestStatus(username) {
+    fetch(`/api/user/test-settings/${username}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.skip_consistency_test) {
+                // 用户已完成一致性测试，显示完成页面
+                document.getElementById('usernameSection').classList.add('hidden');
+                document.getElementById('testSection').classList.add('hidden');
+                document.getElementById('completionSection').classList.remove('hidden');
+                
+                // 更新完成页面的文本
+                 const completionSection = document.getElementById('completionSection');
+                 completionSection.innerHTML = `
+                     <div class="completion-content">
+                         <h2>✅ 您已完成一致性测试！</h2>
+                         <p>您之前已经完成了一致性测试，无需重复进行。</p>
+                         <div class="completion-actions">
+                             <button class="btn-primary" onclick="window.location.href='/'">返回主页</button>
+                             <button class="btn-secondary" onclick="window.location.href='/test'">开始正式测试</button>
+                         </div>
+                     </div>
+                 `;
+            } else {
+                // 用户未完成一致性测试，开始测试
+                document.getElementById('usernameSection').classList.add('hidden');
+                document.getElementById('testSection').classList.remove('hidden');
+                loadConsistencyQuestions();
+            }
+        })
+        .catch(error => {
+            console.error('检查一致性测试状态失败:', error);
+            // 出错时默认开始测试
+            document.getElementById('usernameSection').classList.add('hidden');
+            document.getElementById('testSection').classList.remove('hidden');
+            loadConsistencyQuestions();
+        });
 }
 
 // 初始化滑块
@@ -101,10 +140,7 @@ function showQuestion(index) {
     
     // 更新题目信息
     const questionElement = document.getElementById('consistencyQuestion');
-    questionElement.innerHTML = `
-        <strong>音频文件:</strong> ${question.filename}<br>
-        <small>请听音频并进行情感标注</small>
-    `;
+    questionElement.innerHTML = ``;
     
     // 加载音频
     const audioPlayer = document.getElementById('audioPlayer');
@@ -141,10 +177,6 @@ function resetForm() {
     document.getElementById('vValue').textContent = '0';
     document.getElementById('aValue').textContent = '3';
     
-    // 重置单选按钮
-    document.getElementById('nonNeutral').checked = true;
-    document.getElementById('patient').checked = true;
-    
     // 清除离散情感选择
     const discreteRadios = document.querySelectorAll('input[name="discreteEmotion"]');
     discreteRadios.forEach(radio => radio.checked = false);
@@ -157,40 +189,27 @@ function restoreAnswer(answer) {
     document.getElementById('vValue').textContent = answer.v_value || '0';
     document.getElementById('aValue').textContent = answer.a_value || '3';
     
-    // 恢复情感类型
-    if (answer.emotion_type) {
-        const emotionTypeRadio = document.querySelector(`input[name="emotionType"][value="${answer.emotion_type}"]`);
-        if (emotionTypeRadio) emotionTypeRadio.checked = true;
-    }
-    
-    // 恢复离散情感
-    if (answer.discrete_emotion) {
-        const discreteEmotionRadio = document.querySelector(`input[name="discreteEmotion"][value="${answer.discrete_emotion}"]`);
-        if (discreteEmotionRadio) discreteEmotionRadio.checked = true;
-    }
-    
-    // 恢复患者状态
-    if (answer.patient_status) {
-        const patientStatusRadio = document.querySelector(`input[name="patientStatus"][value="${answer.patient_status}"]`);
-        if (patientStatusRadio) patientStatusRadio.checked = true;
-    }
+    // 恢复离散情感选择
+    const discreteRadios = document.querySelectorAll('input[name="discreteEmotion"]');
+    discreteRadios.forEach(radio => {
+        radio.checked = radio.value === answer.discrete_emotion;
+    });
 }
 
 // 保存当前答案
 function saveCurrentAnswer() {
     const vValue = parseFloat(document.getElementById('vSlider').value);
     const aValue = parseFloat(document.getElementById('aSlider').value);
-    const emotionType = document.querySelector('input[name="emotionType"]:checked')?.value;
-    const discreteEmotion = document.querySelector('input[name="discreteEmotion"]:checked')?.value;
-    const patientStatus = document.querySelector('input[name="patientStatus"]:checked')?.value;
+    
+    // 获取离散情感选择
+    const discreteRadio = document.querySelector('input[name="discreteEmotion"]:checked');
+    const discreteEmotion = discreteRadio ? discreteRadio.value : null;
     
     userAnswers[currentQuestionIndex] = {
         filename: consistencyQuestions[currentQuestionIndex].filename,
         v_value: vValue,
         a_value: aValue,
-        emotion_type: emotionType,
-        discrete_emotion: discreteEmotion,
-        patient_status: patientStatus
+        discrete_emotion: discreteEmotion
     };
 }
 
@@ -219,11 +238,12 @@ function nextQuestion() {
 
 // 验证当前答案
 function validateCurrentAnswer() {
-    const emotionType = document.querySelector('input[name="emotionType"]:checked');
-    const discreteEmotion = document.querySelector('input[name="discreteEmotion"]:checked');
-    const patientStatus = document.querySelector('input[name="patientStatus"]:checked');
-    
-    return emotionType && discreteEmotion && patientStatus;
+    // 验证离散情感是否已选择
+    const discreteRadio = document.querySelector('input[name="discreteEmotion"]:checked');
+    if (!discreteRadio) {
+        return false;
+    }
+    return true;
 }
 
 // 更新导航按钮
@@ -258,7 +278,7 @@ function submitConsistencyTest() {
     // 检查是否所有题目都已完成
     const incompleteQuestions = [];
     for (let i = 0; i < userAnswers.length; i++) {
-        if (!userAnswers[i] || !userAnswers[i].emotion_type || !userAnswers[i].discrete_emotion || !userAnswers[i].patient_status) {
+        if (!userAnswers[i] || userAnswers[i].v_value === undefined || userAnswers[i].a_value === undefined || !userAnswers[i].discrete_emotion) {
             incompleteQuestions.push(i + 1);
         }
     }
@@ -285,7 +305,7 @@ function submitConsistencyTest() {
     .then(data => {
         if (data.success) {
             // 更新用户的一致性测试跳过设置
-            updateUserTestSettings(username, true, true)
+            updateUserTestSettings(username, false, true)
                 .then(() => {
                     // 显示完成页面
                     document.getElementById('testSection').classList.add('hidden');

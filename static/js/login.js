@@ -68,6 +68,9 @@ function handleLogin(event) {
             // 登录成功，显示成功消息
             showSuccess(data.message);
             
+            // 保存用户名到localStorage，供主页面使用
+            localStorage.setItem('emotion_labeling_username', data.username);
+            
             // 添加调试信息
             console.log('登录响应数据:', data);
             console.log('skip_test:', data.skip_test, '类型:', typeof data.skip_test);
@@ -82,7 +85,7 @@ function handleLogin(event) {
                 } else if (!data.skip_consistency_test) {
                     console.log('重定向到一致性测试页面');
                     // 跳过测试但需要进行一致性检验
-                    window.location.href = '/consistency_test';
+                    window.location.href = '/consistency-test';
                 } else {
                     console.log('重定向到主页面');
                     // 跳过所有测试，直接进入主页面
