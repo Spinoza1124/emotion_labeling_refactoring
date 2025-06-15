@@ -16,6 +16,7 @@ from typing import Dict, List, Any
 from config import Config
 from services.database_service import DatabaseService
 from services.audio_service import AudioService
+from group_assignment_manager import GroupAssignmentManager
 
 class AdminService:
     """管理员服务类"""
@@ -107,7 +108,7 @@ class AdminService:
             cursor.execute("""
                 SELECT 
                     username,
-                    COUNT(*) as total_annotations,
+                    COUNT(*) as user_annotations,
                     SUM(CASE WHEN va_complete = 1 AND discrete_complete = 1 THEN 1 ELSE 0 END) as completed_annotations,
                     COUNT(DISTINCT speaker) as speakers_count,
                     AVG(play_count) as avg_play_count,
@@ -115,17 +116,38 @@ class AdminService:
                     MAX(timestamp) as last_annotation
                 FROM emotion_labels 
                 GROUP BY username
-                ORDER BY total_annotations DESC
+                ORDER BY user_annotations DESC
             """)
             
             users_data = []
+            group_manager = GroupAssignmentManager()
+            
             for row in cursor.fetchall():
-                completion_rate = (row[2] / row[1] * 100) if row[1] > 0 else 0
+                username = row[0]
+                user_annotations = row[1]
+                completed_annotations = row[2]
+                
+                # 获取用户的组分配信息
+                try:
+                    assignment_info = group_manager.get_user_assignment_info(username)
+                    if assignment_info and assignment_info.get('group_info'):
+                        # 使用组的总样本数作为"总标注数"
+                        total_annotations = assignment_info['group_info'].get('total_segments', user_annotations)
+                        # 重新计算完成率：用户完成数 / 组总样本数
+                        completion_rate = (completed_annotations / total_annotations * 100) if total_annotations > 0 else 0
+                    else:
+                        # 如果用户没有分配组，使用用户实际标注数
+                        total_annotations = user_annotations
+                        completion_rate = (completed_annotations / total_annotations * 100) if total_annotations > 0 else 0
+                except Exception:
+                    # 如果获取组信息失败，使用用户实际标注数
+                    total_annotations = user_annotations
+                    completion_rate = (completed_annotations / total_annotations * 100) if total_annotations > 0 else 0
                 
                 users_data.append({
-                    "username": row[0],
-                    "total_annotations": row[1],
-                    "completed_annotations": row[2],
+                    "username": username,
+                    "total_annotations": total_annotations,
+                    "completed_annotations": completed_annotations,
                     "completion_rate": round(completion_rate, 2),
                     "speakers_count": row[3],
                     "avg_play_count": round(row[4], 2) if row[4] else 0,
