@@ -5,6 +5,7 @@ import glob
 from flask import Blueprint, jsonify, request, send_from_directory
 from config import Config
 
+
 # 测试音频文件夹配置
 TEST_AUDIO_FOLDER = os.getenv(
     "TEST_AUDIO_FOLDER",
@@ -81,8 +82,8 @@ def get_test_questions():
         # 随机打乱题目顺序
         random.shuffle(questions)
         
-        # 限制题目数量（例如最多10题）
-        questions = questions[:10]
+        # 限制题目数量
+        questions = questions[:Config.TEST_QUESTION_LIMIT]
         
         return jsonify({
             'success': True,

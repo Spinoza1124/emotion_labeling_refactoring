@@ -26,6 +26,9 @@ class Config:
     SESSION_COOKIE_SECURE = False  # 开发环境设为False，生产环境应设为True
     SESSION_COOKIE_SAMESITE = 'Lax'
     PERMANENT_SESSION_LIFETIME = 3600 * 24  # 24小时
+
+    # 测试配置
+    TEST_QUESTION_LIMIT = 1  # 测试题目数量限制
     
     # 确保必要目录存在
     @classmethod

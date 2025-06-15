@@ -412,7 +412,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         <p>您的正确率为 <strong>${accuracy}%</strong>，已达到90%的要求。</p>
                         <p>现在将进入一致性测试环节。</p>
                         <button class="test-button primary" onclick="goToConsistencyTest()">进入一致性测试</button>
-                        <button class="test-button secondary" onclick="goToMainPage()">跳过一致性测试，直接进入标注页面</button>
                     `;
                 })
                 .catch(error => {
@@ -423,7 +422,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         <p>您的正确率为 <strong>${accuracy}%</strong>，已达到90%的要求。</p>
                         <p>现在将进入一致性测试环节。</p>
                         <button class="test-button primary" onclick="goToConsistencyTest()">进入一致性测试</button>
-                        <button class="test-button secondary" onclick="goToMainPage()">跳过一致性测试，直接进入标注页面</button>
                     `;
                 });
         } else {
