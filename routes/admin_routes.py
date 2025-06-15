@@ -5,7 +5,7 @@
 """
 
 import os
-from flask import Blueprint, jsonify, request, render_template, session
+from flask import Blueprint, jsonify, request, render_template, session, send_file
 from services.admin_service import AdminService
 from services.user_service import UserService
 from models.admin_model import AdminModel
@@ -774,6 +774,50 @@ def export_data():
             speaker=speaker
         )
         return jsonify(export_result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@admin_bp.route('/api/export/download')
+@admin_required
+def download_export_data():
+    """
+    直接下载导出的标注数据
+    
+    Returns:
+        文件下载响应
+    """
+    try:
+        export_format = request.args.get('format', 'csv')
+        username = request.args.get('username')
+        speaker = request.args.get('speaker')
+        
+        export_result = AdminService.export_annotation_data(
+            format=export_format,
+            username=username,
+            speaker=speaker
+        )
+        
+        if export_result['success']:
+            filepath = export_result['filepath']
+            filename = export_result['filename']
+            
+            # 设置正确的MIME类型
+            if export_format.lower() == 'csv':
+                mimetype = 'text/csv'
+            elif export_format.lower() == 'json':
+                mimetype = 'application/json'
+            else:
+                mimetype = 'application/octet-stream'
+            
+            return send_file(
+                filepath,
+                as_attachment=True,
+                download_name=filename,
+                mimetype=mimetype
+            )
+        else:
+            return jsonify({"error": "导出失败"}), 500
+            
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

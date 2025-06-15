@@ -76,6 +76,11 @@ class AdminDashboard {
         document.getElementById('export-btn')?.addEventListener('click', () => {
             this.exportData();
         });
+        
+        // 直接下载按钮
+        document.getElementById('download-btn')?.addEventListener('click', () => {
+            this.downloadData();
+        });
 
         document.getElementById('backup-btn')?.addEventListener('click', () => {
             this.backupDatabase();
@@ -618,6 +623,34 @@ class AdminDashboard {
             }
         } catch (error) {
             this.showError('网络错误: ' + error.message);
+        }
+    }
+
+    /**
+     * 直接下载数据
+     */
+    async downloadData() {
+        const format = document.getElementById('export-format').value;
+        const username = document.getElementById('export-username').value;
+        const speaker = document.getElementById('export-speaker').value;
+
+        const params = new URLSearchParams({ format });
+        if (username) params.append('username', username);
+        if (speaker) params.append('speaker', speaker);
+
+        try {
+            // 创建一个隐藏的链接来触发下载
+            const downloadUrl = `/admin/api/export/download?${params}`;
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            this.showSuccess('文件下载已开始');
+        } catch (error) {
+            this.showError('下载失败: ' + error.message);
         }
     }
 

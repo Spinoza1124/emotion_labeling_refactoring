@@ -5,34 +5,67 @@ import re
 import random
 from config import Config
 from services.order_service import OrderService
+from group_assignment_manager import GroupAssignmentManager
 
 class AudioService:
     """音频文件相关服务"""
     
     @staticmethod
     def get_speakers_list(username="default"):
-        """获取说话人列表"""
+        """获取说话人列表（根据用户分组过滤）"""
         if not os.path.exists(Config.AUDIO_FOLDER):
             raise FileNotFoundError(f"音频文件夹不存在: {Config.AUDIO_FOLDER}")
 
-        # 获取所有说话人目录
-        all_speakers = [
-            d for d in os.listdir(Config.AUDIO_FOLDER)
-            if os.path.isdir(os.path.join(Config.AUDIO_FOLDER, d))
-        ]
+        # 获取用户分配的分组信息
+        group_manager = GroupAssignmentManager()
+        user_assignment = group_manager.get_user_assignment_info(username)
         
-        # 按spk编号分组
-        speaker_groups = {}
-        for speaker in all_speakers:
-            match = re.match(r'(spk)(\d+)-(\d+)-(\d+)', speaker)
-            if match:
-                prefix, spk_id, part, section = match.groups()
-                spk_group = f"spk{spk_id}"
-                if spk_group not in speaker_groups:
-                    speaker_groups[spk_group] = []
-                speaker_groups[spk_group].append(speaker)
-            else:
-                speaker_groups[speaker] = [speaker]
+        if user_assignment:
+            # 用户有分配的分组，只返回该分组的说话人
+            group_id = user_assignment['group_id']
+            assigned_speakers = group_manager.get_group_speakers(group_id)
+            
+            # 获取所有说话人目录
+            all_speakers = [
+                d for d in os.listdir(Config.AUDIO_FOLDER)
+                if os.path.isdir(os.path.join(Config.AUDIO_FOLDER, d))
+            ]
+            
+            # 按spk编号分组，但只包含分配给用户的说话人
+            speaker_groups = {}
+            for speaker in all_speakers:
+                match = re.match(r'(spk)(\d+)-(\d+)-(\d+)', speaker)
+                if match:
+                    prefix, spk_id, part, section = match.groups()
+                    spk_group = f"spk{spk_id}"
+                    # 只包含分配给用户的说话人
+                    if spk_group in assigned_speakers:
+                        if spk_group not in speaker_groups:
+                            speaker_groups[spk_group] = []
+                        speaker_groups[spk_group].append(speaker)
+                else:
+                    # 直接匹配的说话人
+                    if speaker in assigned_speakers:
+                        speaker_groups[speaker] = [speaker]
+        else:
+            # 用户没有分配分组，返回所有说话人（兼容旧逻辑）
+            all_speakers = [
+                d for d in os.listdir(Config.AUDIO_FOLDER)
+                if os.path.isdir(os.path.join(Config.AUDIO_FOLDER, d))
+            ]
+            
+            # 按spk编号分组
+            speaker_groups = {}
+            for speaker in all_speakers:
+                match = re.match(r'(spk)(\d+)-(\d+)-(\d+)', speaker)
+                if match:
+                    prefix, spk_id, part, section = match.groups()
+                    spk_group = f"spk{spk_id}"
+                    if spk_group not in speaker_groups:
+                        speaker_groups[spk_group] = []
+                    speaker_groups[spk_group].append(speaker)
+                else:
+                    speaker_groups[speaker] = [speaker]
         
         # 获取或创建用户专属排序
         return AudioService._get_user_speaker_order(username, speaker_groups)

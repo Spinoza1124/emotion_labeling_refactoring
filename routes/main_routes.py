@@ -3,9 +3,11 @@ from functools import wraps
 from datetime import timedelta
 from models.user_model import UserModel
 from utils.logger import emotion_logger, get_client_ip
+from group_assignment_manager import GroupAssignmentManager
 
 main_bp = Blueprint('main', __name__)
 user_model = UserModel()
+group_manager = GroupAssignmentManager()
 
 @main_bp.route("/login", methods=["GET", "POST"])
 def login():
@@ -40,13 +42,26 @@ def login():
         # 检查用户测试跳过设置
         test_settings = user_model.get_user_test_settings(wechat_name)
         
+        # 为用户分配分组（如果还没有分配的话）
+        group_id, group_info = group_manager.get_available_group_for_user(wechat_name)
+        if group_id and not group_manager.get_user_assignment_info(wechat_name):
+            success, message = group_manager.assign_group_to_user(wechat_name, group_id)
+            if success:
+                emotion_logger.log_user_activity(
+                    username=wechat_name,
+                    action="分组分配",
+                    details={"group_id": group_id, "message": message},
+                    ip_address=ip_address
+                )
+        
         emotion_logger.log_user_activity(
             username=wechat_name,
             action="登录成功",
             details={
                 "phone_number": phone_number,
                 "skip_test": test_settings.get('skip_test', False),
-                "skip_consistency_test": test_settings.get('skip_consistency_test', False)
+                "skip_consistency_test": test_settings.get('skip_consistency_test', False),
+                "assigned_group": group_id
             },
             ip_address=ip_address
         )
@@ -81,6 +96,18 @@ def login():
             
             # 注册成功后，同样检查测试跳过设置
             test_settings = user_model.get_user_test_settings(wechat_name)
+            
+            # 为新注册用户分配分组
+            group_id, group_info = group_manager.get_available_group_for_user(wechat_name)
+            if group_id:
+                success, message = group_manager.assign_group_to_user(wechat_name, group_id)
+                if success:
+                    emotion_logger.log_user_activity(
+                        username=wechat_name,
+                        action="新用户分组分配",
+                        details={"group_id": group_id, "message": message},
+                        ip_address=ip_address
+                    )
             
             if request.is_json:
                 response_data = {

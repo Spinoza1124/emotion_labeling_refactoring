@@ -6,6 +6,7 @@ from routes.api_routes import api_bp
 from routes.test_routes import test_bp
 from routes.consistency_routes import consistency_bp
 from routes.admin_routes import admin_bp
+from routes.group_routes import group_bp
 from utils.count_audio_files import update_audio_count_in_system
 
 def create_app():
@@ -29,6 +30,7 @@ def create_app():
     app.register_blueprint(test_bp)  # 移除url_prefix，因为test_routes.py中已经包含了完整路径
     app.register_blueprint(consistency_bp)  # 注册一致性测试路由
     app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(group_bp)  # 注册分组管理路由
     
     return app
 
