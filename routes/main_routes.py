@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 from functools import wraps
 from datetime import timedelta
 from models.user_model import UserModel
+from utils.logger import emotion_logger, get_client_ip
 
 main_bp = Blueprint('main', __name__)
 user_model = UserModel()
@@ -16,8 +17,15 @@ def login():
     data = request.get_json() if request.is_json else request.form
     wechat_name = data.get('text1', '').strip()
     phone_number = data.get('password', '').strip()
+    ip_address = get_client_ip()
     
     if not wechat_name or not phone_number:
+        emotion_logger.log_user_activity(
+            username=wechat_name or 'unknown',
+            action="登录失败",
+            details={"reason": "信息不完整", "wechat_name": wechat_name, "phone_number": phone_number},
+            ip_address=ip_address
+        )
         if request.is_json:
             return jsonify({'success': False, 'message': '请填写完整的微信昵称和手机号'}), 400
         return render_template("login.html", error="请填写完整的微信昵称和手机号")
@@ -31,6 +39,17 @@ def login():
         
         # 检查用户测试跳过设置
         test_settings = user_model.get_user_test_settings(wechat_name)
+        
+        emotion_logger.log_user_activity(
+            username=wechat_name,
+            action="登录成功",
+            details={
+                "phone_number": phone_number,
+                "skip_test": test_settings.get('skip_test', False),
+                "skip_consistency_test": test_settings.get('skip_consistency_test', False)
+            },
+            ip_address=ip_address
+        )
         
         if request.is_json:
             response_data = {
@@ -84,6 +103,12 @@ def login():
             else:
                 return redirect(url_for('main.main_page'))
         else:
+            emotion_logger.log_user_activity(
+                username=wechat_name,
+                action="注册失败",
+                details={"reason": "注册失败", "phone_number": phone_number},
+                ip_address=ip_address
+            )
             if request.is_json:
                 return jsonify({'success': False, 'message': '登录失败，请重试'}), 400
             return render_template("login.html", error="登录失败，请重试")
@@ -103,6 +128,14 @@ def login_required(f):
 @main_bp.route("/")
 def index():
     """主页 - 重定向到登录页面"""
+    if 'username' in session:
+        username = session['username']
+        emotion_logger.log_user_activity(
+            username=username,
+            action="访问主页",
+            details={"page": "index"},
+            ip_address=get_client_ip()
+        )
     return redirect(url_for('main.login'))
 
 @main_bp.route("/main")
@@ -120,6 +153,15 @@ def test_page():
 @main_bp.route("/logout", methods=["GET", "POST"])
 def logout():
     """退出登录"""
+    username = session.get('username', 'unknown')
+    
+    emotion_logger.log_user_activity(
+        username=username,
+        action="退出登录",
+        details={"session_cleared": True},
+        ip_address=get_client_ip()
+    )
+    
     # 完全清除会话
     session.clear()
     

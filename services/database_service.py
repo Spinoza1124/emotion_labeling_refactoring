@@ -17,6 +17,7 @@ import json
 from datetime import datetime
 from models.emotion_model import EmotionLabel
 from utils.audio_utils import get_audio_duration
+from utils.logger import emotion_logger
 from config import Config
 
 class DatabaseService:
@@ -118,6 +119,7 @@ class DatabaseService:
         Returns:
             bool: 保存是否成功
         """
+        conn = None
         try:
             from utils.audio_utils import get_audio_duration
             
@@ -163,13 +165,38 @@ class DatabaseService:
                 label.timestamp
             ))
             
+            emotion_logger.log_database_operation(
+                operation="INSERT OR REPLACE",
+                table="emotion_labels",
+                username=label.username,
+                details={
+                    "audio_file": label.audio_file,
+                    "speaker": speaker,
+                    "v_value": label.v_value,
+                    "a_value": label.a_value,
+                    "emotion_type": label.emotion_type,
+                    "discrete_emotion": label.discrete_emotion
+                },
+                success=True
+            )
+            
             conn.commit()
             conn.close()
             return True
             
         except Exception as e:
+            emotion_logger.log_database_operation(
+                operation="INSERT OR REPLACE",
+                table="emotion_labels",
+                username=label_data.get("username", "unknown"),
+                details={"audio_file": label_data.get("audio_file"), "error": str(e)},
+                success=False
+            )
             print(f"保存标注数据时出错: {e}")
             return False
+        finally:
+            if conn:
+                conn.close()
     
     @staticmethod
     def get_label(username, speaker, filename):
@@ -184,6 +211,7 @@ class DatabaseService:
         Returns:
             dict: 标注数据字典，如果不存在则返回None
         """
+        conn = None
         try:
             conn = DatabaseService.get_connection()
             cursor = conn.cursor()
@@ -214,13 +242,39 @@ class DatabaseService:
                 completeness = calculate_annotation_completeness(label_dict)
                 label_dict['annotation_completeness'] = completeness
                 
+                emotion_logger.log_database_operation(
+                    operation="SELECT",
+                    table="emotion_labels",
+                    username=username,
+                    details={"audio_file": filename, "speaker": speaker, "found": True},
+                    success=True
+                )
+                
                 return label_dict
+            
+            emotion_logger.log_database_operation(
+                operation="SELECT",
+                table="emotion_labels",
+                username=username,
+                details={"audio_file": filename, "speaker": speaker, "found": False},
+                success=True
+            )
             
             return None
             
         except Exception as e:
+            emotion_logger.log_database_operation(
+                operation="SELECT",
+                table="emotion_labels",
+                username=username,
+                details={"audio_file": filename, "speaker": speaker, "error": str(e)},
+                success=False
+            )
             print(f"获取标注数据时出错: {e}")
             return None
+        finally:
+            if conn:
+                conn.close()
     
     @staticmethod
     def get_labeled_files(username, speaker):

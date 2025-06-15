@@ -4,6 +4,7 @@ from config import Config
 from utils.file_utils import safe_json_load, safe_json_save
 from services.order_service import OrderService
 from services.database_service import DatabaseService
+from utils.logger import emotion_logger
 
 class UserService:
     """用户相关服务"""
@@ -11,39 +12,63 @@ class UserService:
     @staticmethod
     def update_username(old_username, new_username):
         """更新用户名并移动文件"""
-        old_user_dir = os.path.join(Config.DATABASE_FOLDER, old_username)
-        new_user_dir = os.path.join(Config.DATABASE_FOLDER, new_username)
-        
-        if not os.path.exists(old_user_dir):
-            return 0
-        
-        os.makedirs(new_user_dir, exist_ok=True)
-        moved_count = 0
-        
-        # 移动所有JSON文件并更新用户名
-        for filename in os.listdir(old_user_dir):
-            if filename.endswith('.json'):
-                old_file_path = os.path.join(old_user_dir, filename)
-                new_file_path = os.path.join(new_user_dir, filename)
-                
-                # 读取并更新用户名
-                data = safe_json_load(old_file_path, [])
-                for item in data:
-                    if item.get("username") == old_username:
-                        item["username"] = new_username
-                
-                # 保存到新位置
-                safe_json_save(new_file_path, data)
-                moved_count += 1
-        
-        # 删除旧目录
-        if moved_count > 0:
-            shutil.rmtree(old_user_dir)
-        
-        # 更新数据库中的用户排序数据
-        UserService._update_user_orders_in_db(old_username, new_username)
-        
-        return moved_count
+        try:
+            old_user_dir = os.path.join(Config.DATABASE_FOLDER, old_username)
+            new_user_dir = os.path.join(Config.DATABASE_FOLDER, new_username)
+            
+            moved_count = 0
+            
+            emotion_logger.log_system_event(
+                "开始更新用户名",
+                {"old_username": old_username, "new_username": new_username}
+            )
+            
+            if not os.path.exists(old_user_dir):
+                return {'success': True, 'moved_files': 0}
+            
+            os.makedirs(new_user_dir, exist_ok=True)
+            
+            # 移动所有JSON文件并更新用户名
+            for filename in os.listdir(old_user_dir):
+                if filename.endswith('.json'):
+                    old_file_path = os.path.join(old_user_dir, filename)
+                    new_file_path = os.path.join(new_user_dir, filename)
+                    
+                    # 读取并更新用户名
+                    data = safe_json_load(old_file_path, [])
+                    for item in data:
+                        if item.get("username") == old_username:
+                            item["username"] = new_username
+                    
+                    # 保存到新位置
+                    safe_json_save(new_file_path, data)
+                    moved_count += 1
+            
+            # 删除旧目录
+            if moved_count > 0:
+                shutil.rmtree(old_user_dir)
+            
+            # 更新数据库中的用户排序数据
+            UserService._update_user_orders_in_db(old_username, new_username)
+            
+            emotion_logger.log_system_event(
+                "用户名更新完成",
+                {
+                    "old_username": old_username,
+                    "new_username": new_username,
+                    "moved_files": moved_count
+                }
+            )
+            
+            return {'success': True, 'moved_files': moved_count}
+            
+        except Exception as e:
+            emotion_logger.log_error(
+                e,
+                f"更新用户名失败: {old_username} -> {new_username}",
+                old_username
+            )
+            return {'success': False, 'error': str(e)}
     
     @staticmethod
     def _update_user_orders_in_db(old_username, new_username):

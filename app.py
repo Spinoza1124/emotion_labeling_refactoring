@@ -6,7 +6,7 @@ from routes.api_routes import api_bp
 from routes.test_routes import test_bp
 from routes.consistency_routes import consistency_bp
 from routes.admin_routes import admin_bp
-from scripts.count_audio_files import update_audio_count_in_system
+from utils.count_audio_files import update_audio_count_in_system
 
 def create_app():
     """应用工厂函数"""

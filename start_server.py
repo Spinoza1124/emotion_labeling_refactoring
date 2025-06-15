@@ -4,6 +4,7 @@ import sys
 import logging
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
+from utils.logger import emotion_logger
 
 # 创建日志目录
 LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')
@@ -47,7 +48,8 @@ def import_app():
     sys.path.append(os.path.dirname(os.path.abspath(__file__)))
     
     # 只使用标准版本
-    from app import app
+    from app import create_app
+    app = create_app()
     return app, "标准版本 (app.py)"
 
 def get_local_ip():
@@ -68,10 +70,12 @@ if __name__ == "__main__":
     # 设置日志
     logger = setup_logging()
     logger.info("正在启动情感标注系统...")
+    emotion_logger.log_system_event("系统启动", {"version": "标准版本", "module": "app.py"})
     
     # 导入应用（只使用标准版本）
     app, version_info = import_app()
     logger.info(f"已加载应用: {version_info}")
+    emotion_logger.log_system_event("应用加载完成", {"app_type": "Flask应用"})
     
     # 获取本机IP
     ip_address = get_local_ip()
@@ -87,13 +91,18 @@ if __name__ == "__main__":
     
     # 记录应用启动信息
     logger.info(f"服务器正在监听: {ip_address}:{port}")
+    emotion_logger.log_system_event("服务器启动", {"host": ip_address, "port": port, "debug": True})
     
     try:
         # 运行Flask应用
         app.run(host=ip_address, port=port, debug=True, use_reloader=False)
+    except KeyboardInterrupt:
+        logger.info("服务器关闭")
+        emotion_logger.log_system_event("服务器关闭", {"reason": "用户中断"})
     except Exception as e:
         # 记录异常
         logger.error(f"服务器错误: {str(e)}", exc_info=True)
+        emotion_logger.log_error(e, "服务器启动失败", traceback_info=str(e))
         print(f"\n发生错误: {str(e)}")
     finally:
         # 记录关闭信息
