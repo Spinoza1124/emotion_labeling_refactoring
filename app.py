@@ -23,14 +23,6 @@ def create_app():
     # 初始化配置
     Config.init_directories()
     
-    # 在应用启动时统计音频文件数量
-    # try:
-    #     print("正在统计音频文件数量...")
-    #     total_audio_files = update_audio_count_in_system()
-    #     print(f"音频文件统计完成，共 {total_audio_files} 个文件")
-    # except Exception as e:
-    #     print(f"音频文件统计失败: {e}")
-    
     # 注册蓝图
     app.register_blueprint(main_bp)
     app.register_blueprint(api_bp, url_prefix='/api')

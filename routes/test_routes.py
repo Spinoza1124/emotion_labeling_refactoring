@@ -5,7 +5,11 @@ import glob
 from flask import Blueprint, jsonify, request, send_from_directory
 from config import Config
 
-
+# 测试音频文件夹配置
+TEST_AUDIO_FOLDER = os.getenv(
+    "TEST_AUDIO_FOLDER",
+    "/mnt/shareEEx/liuyang/code/emotion_labeling_refactoring/data/test_examples"
+)
 
 test_bp = Blueprint('test', __name__)
 
@@ -20,7 +24,7 @@ def get_test_questions():
     """获取测试题目"""
     try:
         # 使用配置的测试音频文件夹
-        test_examples_dir = os.path.abspath(Config.TEST_AUDIO_FOLDER)
+        test_examples_dir = os.path.abspath(TEST_AUDIO_FOLDER)
         
         questions = []
         
@@ -78,7 +82,7 @@ def get_test_questions():
         random.shuffle(questions)
         
         # 限制题目数量（例如最多10题）
-        questions = questions[:1]
+        questions = questions[:10]
         
         return jsonify({
             'success': True,
@@ -96,7 +100,7 @@ def get_test_questions():
 def get_test_audio(filename):
     """获取测试音频文件"""
     try:
-        test_examples_dir = os.path.abspath(Config.TEST_AUDIO_FOLDER)
+        test_examples_dir = os.path.abspath(TEST_AUDIO_FOLDER)
         
         # 在各个子目录中查找文件
         for subfolder in ['discrete_emotions', 'potency', 'wake_up']:
@@ -149,7 +153,7 @@ def submit_test_result():
         score = (correct_count / total_questions * 100) if total_questions > 0 else 0
         
         # 保存测试结果
-        test_results_dir = os.path.join(Config.DATABASE_FOLDER, 'test_results')
+        test_results_dir = os.path.join(Config.LABEL_FOLDER, 'test_results')
         os.makedirs(test_results_dir, exist_ok=True)
         
         result_file = os.path.join(test_results_dir, f"{username}_test_results.json")
@@ -193,7 +197,7 @@ def submit_test_result():
 def get_test_history(username):
     """获取用户测试历史"""
     try:
-        test_results_dir = os.path.join(Config.DATABASE_FOLDER, 'test_results')
+        test_results_dir = os.path.join(Config.LABEL_FOLDER, 'test_results')
         result_file = os.path.join(test_results_dir, f"{username}_test_results.json")
         
         if not os.path.exists(result_file):
